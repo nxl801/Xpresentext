@@ -1,0 +1,18 @@
+[
+  {
+    "caseName": "appendix-chart",
+    "callNumber": 16,
+    "question": "What was the North regional share?",
+    "expectedPage": 11,
+    "expectedShortAnswer": "The North regional share was 37%.",
+    "response": "[{\"part\":\"short\",\"kind\":\"grounded\",\"text\":\"The North regional share was 37%.\",\"sources\":[{\"id\":\"E25\",\"quote\":\"Regional share · North · 37%\"}]}]"
+  },
+  {
+    "caseName": "cross-page-notes",
+    "callNumber": 32,
+    "question": "Which checksum did the Cedar logger use?",
+    "expectedPage": 4,
+    "expectedShortAnswer": "The Cedar logger used a rolling checksum to verify integrity.",
+    "response": "[{\"part\":\"short\",\"kind\":\"grounded\",\"text\":\"The Cedar logger used a rolling checksum to verify integrity.\",\"sources\":[{\"id\":\"E9\",\"quote\":\"The Cedar logger verified integrity with a rolling checksum.\"}]},{\"part\":\"bullet\",\"kind\":\"grounded\",\"text\":\"The specific type of checksum identified is a rolling checksum.\",\"sources\":[{\"id\":\"E9\",\"quote\":\"rolling checksum\"}]},{\"part\":\"detail\",\"kind\":\"grounded\",\"text\":\"The evidence confirms the method used for integrity verification but does not specify the algorithm or parameters of the rolling checksum.\",\"sources\":[{\"id\":\"E9\",\"quote\":\"verified integrity with a rolling checksum\"}]}]"
+  }
+]

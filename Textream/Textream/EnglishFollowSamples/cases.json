@@ -1,0 +1,36 @@
+{
+  "script": [
+    {"id": "A", "text": "The queue starts empty."},
+    {"id": "B", "text": "Discard duplicate deliveries before writing the ledger."},
+    {"id": "C", "text": "Send the receipt only after the commit completes."}
+  ],
+  "prepared": [
+    {"id": "B", "text": "Throw away any event we already handled so it never gets recorded twice."}
+  ],
+  "cases": [
+    {
+      "id": "strong-paraphrase",
+      "state": "following",
+      "transcript": "Throw away any event we have already handled so it never gets recorded twice.",
+      "expected": "B"
+    },
+    {
+      "id": "negation",
+      "state": "following",
+      "transcript": "Do not discard duplicate deliveries before writing the ledger. Keep every event.",
+      "expected": "STAY"
+    },
+    {
+      "id": "hypothetical",
+      "state": "following",
+      "transcript": "If we were to discard duplicate deliveries before writing the ledger, how would the retry counter change?",
+      "expected": "STAY"
+    },
+    {
+      "id": "quoted-in-answer",
+      "state": "awaitingResume",
+      "transcript": "For the answer, I quoted the line: discard duplicate deliveries before writing the ledger.",
+      "expected": "STAY"
+    }
+  ]
+}

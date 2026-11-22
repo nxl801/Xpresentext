@@ -1,0 +1,24 @@
+[
+  {
+    "id": "current-page",
+    "question": "What was Orchid coverage?",
+    "currentPageIndex": 4,
+    "targetPage": 5,
+    "terms": ["83%"]
+  },
+  {
+    "id": "cross-page-notes",
+    "question": "Which checksum did the Cedar logger use?",
+    "currentPageIndex": 11,
+    "targetPage": 4,
+    "terms": ["rolling", "checksum"]
+  },
+  {
+    "id": "explicit-follow-up",
+    "question": "How did the team calculate it?",
+    "currentPageIndex": 11,
+    "targetPage": 8,
+    "terms": ["weight", "duration"],
+    "primer": "What was Orchid coverage?"
+  }
+]
