@@ -7,7 +7,7 @@ permissions:
 jobs:
   capture:
     runs-on: macos-26
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Open the published app with a sample talk
@@ -22,7 +22,10 @@ jobs:
           demo-env/bin/pip install -q python-pptx
           demo-env/bin/python - <<'PY'
           from pptx import Presentation
+          from pptx.util import Inches, Pt
+          from pptx.dml.color import RGBColor
           d = Presentation()
+          d.slide_width, d.slide_height = Inches(13.333), Inches(7.5)
           for title, body, notes in [
             ("A quieter morning commute", "A three-week pilot", "Think about the last time you missed a connection. Today I will show you what changed when we moved one departure."),
             ("Five minutes made the difference", "Earlier departures at two stops", "We moved the first bus five minutes earlier. Riders had more time to make the next train. The timetable stayed the same for the rest of the day."),
@@ -30,12 +33,24 @@ jobs:
               slide=d.slides.add_slide(d.slide_layouts[1])
               slide.shapes.title.text=title
               slide.placeholders[1].text=body
+              fill=slide.background.fill
+              fill.solid()
+              fill.fore_color.rgb=RGBColor.from_string("173E48")
+              for shape,size,color in [(slide.shapes.title,52,"FFFFFF"),(slide.placeholders[1],28,"87DCC1")]:
+                  shape.left=Inches(.8)
+                  shape.width=Inches(11.7)
+                  shape.top=Inches(2.4 if size==52 else 4.0)
+                  for paragraph in shape.text_frame.paragraphs:
+                      for run in paragraph.runs:
+                          run.font.size=Pt(size)
+                          run.font.color.rgb=RGBColor.from_string(color)
               slide.notes_slide.notes_text_frame.text=notes
           d.save("Morning commute.pptx")
           PY
+          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then brew install --cask libreoffice; fi
           defaults write com.apple.universalaccess reduceTransparency -bool false
           open -a "$PWD/Xpresentext.app" "$PWD/Morning commute.pptx"
-          sleep 15
+          sleep 35
           cat > /tmp/window.swift <<'SWIFT'
           import CoreGraphics
           let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly,.excludeDesktopElements], kCGNullWindowID) as? [[String:Any]] ?? []
