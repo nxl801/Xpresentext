@@ -6,6 +6,10 @@
 
 [下载 Apple Silicon 版](https://github.com/nxl801/Xpresentext/releases/download/v0.6.4/Xpresentext-0.6.4-macOS-arm64-AppleSpeech.zip) · [版本说明](https://github.com/nxl801/Xpresentext/releases/tag/v0.6.4) · [从源码构建](#从源码构建)
 
+![三页示例演讲的实际工作区。左侧显示胶片缩略图，当前句高亮，下方可预读下一页讲稿。](docs/images/presenter-workspace-macos26.png)
+
+*使用 macOS 26 SDK 构建后截取的真实窗口。讲稿面板高亮当前句，下方露出下一页的开场白，方便衔接。*
+
 ## 拿一页讲稿，试讲两遍
 
 1. **拖入 PPTX。** 选一页带英文备注的胶片，把其中一句改成自己习惯的说法。个人改稿保存在本机。

@@ -6,6 +6,10 @@ English · [简体中文](README.zh-CN.md)
 
 [Download for Apple Silicon](https://github.com/nxl801/Xpresentext/releases/download/v0.6.4/Xpresentext-0.6.4-macOS-arm64-AppleSpeech.zip) · [Release notes](https://github.com/nxl801/Xpresentext/releases/tag/v0.6.4) · [Build from source](#build-from-source)
 
+![A three-slide talk in Xpresentext. The first sentence is highlighted, with the next slide’s notes directly below.](docs/images/presenter-workspace-macos26.png)
+
+*The presenter’s window on macOS 26, built with the macOS 26 SDK. The reading pane shows your current sentence and a preview of what comes next.*
+
 ## Take one slide for a rehearsal
 
 1. **Drop in your deck.** Open a PPTX with English speaker notes. Pick a slide and edit a line until it sounds like something you would say. Your personal edits stay on your Mac.
