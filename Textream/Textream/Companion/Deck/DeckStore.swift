@@ -243,7 +243,7 @@ actor DeckStore {
     }
 
     func cueTargets(projectID: UUID, revision: DeckRevision) async throws -> [Int: [DeckCueTarget]] {
-        if revision.slides.allSatisfy({ $0.cueTargets != nil }) {
+        if revision.slides.allSatisfy({ $0.hasIndexedCueTargets }) {
             return Dictionary(uniqueKeysWithValues: revision.slides.map { ($0.pageNumber, $0.cueTargets ?? []) })
         }
         if let cached = legacyCueTargets[revision.id] { return cached }

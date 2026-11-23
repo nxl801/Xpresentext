@@ -42,11 +42,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             TextreamService.shared.hideMainWindow()
         }
 
-        #if !APP_STORE && !LOCAL_COMPANION
-        // Direct-download builds check GitHub for updates. App Store builds are
-        // updated exclusively through the App Store.
-        UpdateChecker.shared.checkForUpdates(silent: true)
-        #endif
 
         // Start browser server if enabled
         TextreamService.shared.updateBrowserServer()
@@ -165,7 +160,7 @@ struct TextreamApp: App {
     @ObservedObject private var workspace = StudioWorkspace.shared
 
     var body: some Scene {
-        WindowGroup("Textream Studio") {
+        WindowGroup("Xpresentext") {
             StudioRoot(StudioWorkspace.shared)
                 .onOpenURL { url in
                     if url.isFileURL {
@@ -178,15 +173,9 @@ struct TextreamApp: App {
         .defaultSize(width: 1100, height: 740)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("About Textream Studio") {
+                Button("About Xpresentext") {
                     NSApp.orderFrontStandardAboutPanel(nil)
                 }
-                #if !APP_STORE && !LOCAL_COMPANION
-                Divider()
-                Button("Check for Updates…") {
-                    UpdateChecker.shared.checkForUpdates()
-                }
-                #endif
             }
             CommandGroup(after: .appSettings) {
                 Button("Settings…") {
@@ -228,8 +217,8 @@ struct TextreamApp: App {
             }
             CommandGroup(replacing: .windowArrangement) { }
             CommandGroup(replacing: .help) {
-                Button("Textream Help") {
-                    if let url = URL(string: "https://github.com/f/textream") {
+                Button("Xpresentext Help") {
+                    if let url = Bundle.main.url(forResource: "README", withExtension: "md") ?? URL(string: "https://github.com/nxl801/Xpresentext") {
                         NSWorkspace.shared.open(url)
                     }
                 }

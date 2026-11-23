@@ -105,7 +105,7 @@ final class StudioWorkspace: ObservableObject {
     }
 
     var slides: [DeckSlide] { project?.activeRevision.slides ?? [] }
-    var pageIndex: Int { tracking.position?.pageIndex ?? 0 }
+    var pageIndex: Int { tracking.displayedPageIndex ?? 0 }
     var currentSlide: DeckSlide? {
         let index = pageIndex
         return slides.indices.contains(index) ? slides[index] : nil
@@ -389,7 +389,8 @@ final class StudioWorkspace: ObservableObject {
         }
         trackingPreparationPages = preparation
         tracking.configure(pages: pages, mode: chineseKeyPoints ? .chineseKeyPoints : .english,
-                           localeIdentifier: chineseKeyPoints ? "zh-CN" : "en-US")
+                           localeIdentifier: chineseKeyPoints ? "zh-CN" : "en-US", titles: slides.map(\.title),
+                           document: [project?.id.uuidString, project?.activeRevisionID].compactMap { $0 }.joined(separator: "/"))
     }
 
     var preparedTrackingPageCount: Int { trackingPreparationPages.filter { preparedPage(for: $0) != nil }.count }

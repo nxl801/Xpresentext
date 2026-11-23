@@ -56,10 +56,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>dev.fka.textream</string>
+			<string>local.xpresentext.companion</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>textream</string>
+				<string>xpresentext</string>
 			</array>
 		</dict>
 	</array>
@@ -69,12 +69,12 @@
 			<key>NSMenuItem</key>
 			<dict>
 				<key>default</key>
-				<string>Read in Textream</string>
+				<string>Read in Xpresentext</string>
 			</dict>
 			<key>NSMessage</key>
 			<string>readInTextream</string>
 			<key>NSPortName</key>
-			<string>Textream</string>
+			<string>Xpresentext</string>
 			<key>NSSendTypes</key>
 			<array>
 				<string>public.utf8-plain-text</string>

@@ -17,7 +17,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		446966B42F37E47300AF141F /* Textream.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Textream.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		446966B42F37E47300AF141F /* Xpresentext.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Xpresentext.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000001 /* TextreamiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TextreamiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000002 /* TextreamiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TextreamiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -27,6 +27,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			explicitFolders = (
 				EnglishFollowSamples,
+				LunarAssets,
 			);
 			path = Textream;
 			sourceTree = "<group>";
@@ -81,7 +82,7 @@
 		446966B52F37E47300AF141F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				446966B42F37E47300AF141F /* Textream.app */,
+				446966B42F37E47300AF141F /* Xpresentext.app */,
 				A10000000000000000000001 /* TextreamiOS.app */,
 				A10000000000000000000002 /* TextreamiOSTests.xctest */,
 			);
@@ -98,6 +99,7 @@
 				446966B02F37E47300AF141F /* Sources */,
 				446966B12F37E47300AF141F /* Frameworks */,
 				446966B22F37E47300AF141F /* Resources */,
+				DA62E08E12724F0C87A66011 /* Embed presenter */,
 			);
 			buildRules = (
 			);
@@ -110,7 +112,7 @@
 			packageProductDependencies = (
 			);
 			productName = Textream;
-			productReference = 446966B42F37E47300AF141F /* Textream.app */;
+			productReference = 446966B42F37E47300AF141F /* Xpresentext.app */;
 			productType = "com.apple.product-type.application";
 		};
 		A1000000000000000000000B /* TextreamiOS */ = {
@@ -159,6 +161,21 @@
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXShellScriptBuildPhase section */
+        DA62E08E12724F0C87A66011 /* Embed presenter */ = {
+            isa = PBXShellScriptBuildPhase;
+            alwaysOutOfDate = 1;
+            buildActionMask = 2147483647;
+            files = ();
+            inputPaths = ();
+            name = "Embed presenter";
+            outputPaths = ();
+            runOnlyForDeploymentPostprocessing = 0;
+            shellPath = /bin/bash;
+            shellScript = "\"$SRCROOT/embed-presenter.sh\" \"$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH\" \"$ARCHS\"\n";
+        };
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXProject section */
 		446966AC2F37E47300AF141F /* Project object */ = {
@@ -393,7 +410,7 @@
 				CODE_SIGN_ENTITLEMENTS = Textream/Textream.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = RJA7656U34;
 				ENABLE_APP_SANDBOX = YES;
@@ -402,19 +419,21 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Textream;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_KEY_NSAudioCaptureUsageDescription = "Access meeting audio when you choose system audio for questions.";
+				INFOPLIST_KEY_CFBundleDisplayName = Xpresentext;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Fatih Kadir Akın";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Textream lets nearby devices view or control your teleprompter over your local network.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Textream needs microphone access to listen to your speech and highlight words as you read them.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Textream uses Apple's speech-recognition service to follow along as you read and highlight the current word. Microphone audio may be processed by Apple.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Xpresentext lets nearby devices view or control your teleprompter over your local network.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Xpresentext needs microphone access to listen to your speech and highlight words as you read them.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Xpresentext uses Apple's speech-recognition service to follow along as you read and highlight the current word. Microphone audio may be processed by Apple.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.7.1;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.textream;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MARKETING_VERSION = 0.6.4;
+				PRODUCT_BUNDLE_IDENTIFIER = local.xpresentext.companion;
+				PRODUCT_NAME = Xpresentext;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -434,7 +453,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
@@ -443,19 +462,21 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Textream;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_KEY_NSAudioCaptureUsageDescription = "Access meeting audio when you choose system audio for questions.";
+				INFOPLIST_KEY_CFBundleDisplayName = Xpresentext;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Fatih Kadir Akın";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Textream lets nearby devices view or control your teleprompter over your local network.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Textream needs microphone access to listen to your speech and highlight words as you read them.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Textream uses Apple's speech-recognition service to follow along as you read and highlight the current word. Microphone audio may be processed by Apple.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Xpresentext lets nearby devices view or control your teleprompter over your local network.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Xpresentext needs microphone access to listen to your speech and highlight words as you read them.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Xpresentext uses Apple's speech-recognition service to follow along as you read and highlight the current word. Microphone audio may be processed by Apple.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.7.1;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.textream;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MARKETING_VERSION = 0.6.4;
+				PRODUCT_BUNDLE_IDENTIFIER = local.xpresentext.companion;
+				PRODUCT_NAME = Xpresentext;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -534,7 +555,7 @@
 				CODE_SIGN_ENTITLEMENTS = Textream/Textream.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = RJA7656U34;
 				ENABLE_APP_SANDBOX = YES;
@@ -543,20 +564,22 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Textream;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_KEY_NSAudioCaptureUsageDescription = "Access meeting audio when you choose system audio for questions.";
+				INFOPLIST_KEY_CFBundleDisplayName = Xpresentext;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Fatih Kadir Akın";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Textream lets nearby devices view or control your teleprompter over your local network.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Textream needs microphone access to listen to your speech and highlight words as you read them.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Textream uses Apple's speech-recognition service to follow along as you read and highlight the current word. Microphone audio may be processed by Apple.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Xpresentext lets nearby devices view or control your teleprompter over your local network.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Xpresentext needs microphone access to listen to your speech and highlight words as you read them.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Xpresentext uses Apple's speech-recognition service to follow along as you read and highlight the current word. Microphone audio may be processed by Apple.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.7.1;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.textream;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MARKETING_VERSION = 0.6.4;
+				PRODUCT_BUNDLE_IDENTIFIER = local.xpresentext.companion;
+				PRODUCT_NAME = Xpresentext;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "APP_STORE $(inherited)";

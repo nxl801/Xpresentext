@@ -47,6 +47,17 @@ private struct ChartReplay: QAModel {
     }
 }
 
+@MainActor
+private final class MeetingReplay: CompanionSpeechInput {
+    var deliver: (@MainActor (CompanionSpeechEvent) -> Void)?
+    func start(localeIdentifier: String, reportLevel: Bool, onEvent: @escaping @MainActor (CompanionSpeechEvent) -> Void) {
+        deliver = onEvent
+        onEvent(.started)
+    }
+    func finish() {}
+    func cancel() {}
+}
+
 @main
 @MainActor
 struct WorkspaceAcceptance {
@@ -100,6 +111,36 @@ struct WorkspaceAcceptance {
         ws.updateAppendix(single: (8, true))
         ws.tracking.select(pageIndex: 2)
         try await askNorth(page: 8, number: "37%")
+
+        let meeting = MeetingReplay()
+        let presenter = MurmuryPresenter(makeMeetingInput: { meeting })
+        var displayed: [String: Any] = [:]
+        presenter.bind(ws) { displayed = $0 }
+        presenter.receive(["action": "ready"])
+        let oldContext = displayed["context"] as? String ?? ""
+        let anchor = ws.tracking.position
+        presenter.receive(["action": "ask", "context": oldContext, "text": "What was North pilot adoption?", "follow": true])
+        try await ready { displayed["short"] as? String == "North pilot adoption reached 37%." && ws.questions.state == .completed }
+        let labels = (displayed["sources"] as? [[String: String]] ?? []).compactMap { $0["label"] }
+        try check(!oldContext.isEmpty && labels.contains(where: { $0.contains("第 8 页") }) && ws.tracking.position == anchor,
+                  "Murmury did not display the deck source or moved the anchor")
+        try check(MurmuryPresenter.isMeetingQuestion("Could you explain the calculation?") &&
+                  !MurmuryPresenter.isMeetingQuestion("What we measured was the total.") &&
+                  !MurmuryPresenter.isMeetingQuestion("Thanks for the update."), "Meeting question detection")
+        presenter.receive(["action": "meeting", "context": oldContext])
+        let beforeRemote = ws.questions.question
+        meeting.deliver?(.transcript("What we measured was the total.", isFinal: true))
+        try check(ws.questions.question == beforeRemote, "A remote statement submitted a question")
+        meeting.deliver?(.transcript("Can you explain North", isFinal: false))
+        try check(ws.questions.question == beforeRemote && ws.tracking.position == anchor, "A partial triggered an answer or moved the anchor")
+        let remote = "Can you explain North pilot adoption?"
+        meeting.deliver?(.transcript(remote, isFinal: true))
+        try await ready { ws.questions.question == remote && ws.questions.state == .completed }
+        presenter.receive(["action": "stop", "context": oldContext])
+        meeting.deliver?(.transcript("Could you explain something else?", isFinal: true))
+        try check(ws.questions.question == remote && ws.tracking.position == anchor, "A stopped source submitted a question")
+        print("PASS meeting source routes a final question once, holds the anchor and drops stale audio")
+        print("PASS Murmury host card, active deck chart citation, anchor, and meeting question detection")
         ws.updateAppendix(undo: true)
         try check(ws.tracking.phase == .awaitingResume, "An edit released the Q&A hold")
         ws.updateAppendix(single: (8, true))
@@ -115,6 +156,10 @@ struct WorkspaceAcceptance {
                   moved.script.aiConfirmed && moved.script.text.contains("[Point to North]"), "Moved page lost preparation")
         try check(reordered.cueColorHex == "#6B31C5" && reordered.draftColorHex == "#1A786C", "Colors changed")
         try check(ws.questions.question.isEmpty && ws.questions.answer.citations.isEmpty, "Old answer crossed into next revision")
+        presenter.receive(["action": "ask", "context": oldContext, "text": "Stale question"])
+        try check(ws.questions.question.isEmpty, "Late Murmury question crossed deck revision")
+        presenter.close()
+        print("PASS Murmury late action dropped after revision")
         ws.tracking.select(pageIndex: 11)
         try await askNorth(page: 10, number: "37%")
         print("PASS old page 8 became page 10; new source and preserved edits")

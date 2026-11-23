@@ -206,6 +206,13 @@ nonisolated final class DeckPPTX {
         }
         let master = try masterPath.map(xml)
         let placeholders = (master.map(placeholderTypes) ?? [:]).merging(layout.map(placeholderTypes) ?? [:]) { _, layoutType in layoutType }
+        let titleFrames = [layout, master].compactMap { $0 }.flatMap { document in
+            (document["cSld"]?["spTree"]?.children ?? []).compactMap { shape -> DeckRegion? in
+                guard let type = placeholderType(in: shape, inherited: placeholders),
+                      ["title", "ctrTitle", "vertTitle"].contains(type) else { return nil }
+                return region(shape["spPr"]?["xfrm"], parent: .identity)
+            }
+        }
         var blocks: [TextBlock] = []
         var visuals: [DeckVisual] = []
         if let shapeTree = document["cSld"]?["spTree"] {
@@ -220,8 +227,8 @@ nonisolated final class DeckPPTX {
         hash.append(originalNotes)
         let fingerprint = hash.hex()
         let targets = blocks.compactMap { block -> DeckCueTarget? in
-            guard !block.isTitle, let region = block.region else { return nil }
-            return DeckCueTarget(text: block.text, region: region, bulletItems: block.bulletItems)
+            guard let region = block.region ?? (block.isTitle ? titleFrames.first : nil) else { return nil }
+            return DeckCueTarget(text: block.text, region: region, bulletItems: block.bulletItems, isSlideTitle: block.isTitle || block.text == title)
         }
         return DeckSlide(id: id, pageNumber: pageNumber, title: title,
                          bodyText: blocks.map(\.text).joined(separator: "\n"), originalNotes: originalNotes,

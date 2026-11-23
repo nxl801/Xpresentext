@@ -1,0 +1,8 @@
+Earth.jpg — NASA Goddard Space Flight Center / Reto Stöckli and Robert Simmon.
+Blue Marble composite distributed by NOAA Science On a Sphere.
+https://sos.noaa.gov/catalog/datasets/blue-marble/
+https://sos.noaa.gov/ftp_mirror/land/blue_marble/blue_marble/4096.jpg
+
+LunarHorizon.jpg — AI-generated panoramic lunar landscape created for Xpresentext.
+The rotating Earth, its illumination, and the Moon's shadow are rendered by Xpresentext.
+The panorama is an artistic view, not a photograph from a particular landing site.

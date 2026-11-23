@@ -1,0 +1,13 @@
+id	claim	expected	p_specific	p_entail	speech
+zh1	meetings	1	0.817	0.963	现在大家按同一份定稿办事，原来每周好几次的对齐会也省掉了。
+zh2	meetings	0	0.929	0.967	大家现在都按同一份需求定稿办事。
+zh3	meetings	0	0.631	0.947	需求倒是统一了，可是协调会的次数一次也没少。
+zh4	meetings	0	0.627	0.967	统一需求以后能不能少开协调会？目前没有结论。
+zh5	tracing	1	0.186	0.907	客户临时改口也没关系。工程师一看到改了哪条，就能挑出需要再跑一遍的测试。
+zh6	approval	1	0.409	0.981	每个版本都得等评审的人点头，才允许发出去。
+zh7	approval	0	0.391	0.979	我们全程自动发布，由机器人审批，无需人工点头。
+zh8	tracing	0	0.597	0.958	这次需求有变化，大家已经开会沟通过了。
+zh9	approval	0	0.435	0.934	今天中午大家在食堂集合吃饭。
+zh10	tracing	1	0.324	0.602	每次 release 都要有人签字。requirement 一改，我们也能挑出该重新跑的 test。
+zh11	approval	1	0.518	0.771	每次 release 都要有人签字。requirement 一改，我们也能挑出该重新跑的 test。
+zh12	meetings	0	0.520	0.806	每次 release 都要有人签字。requirement 一改，我们也能挑出该重新跑的 test。

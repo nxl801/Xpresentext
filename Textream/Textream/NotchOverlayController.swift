@@ -507,7 +507,7 @@ class NotchOverlayController: NSObject {
                 .idleSystemSleepDisabled,
                 .idleDisplaySleepDisabled
             ],
-            reason: "Textream teleprompter reading session"
+            reason: "Xpresentext teleprompter reading session"
         )
     }
 

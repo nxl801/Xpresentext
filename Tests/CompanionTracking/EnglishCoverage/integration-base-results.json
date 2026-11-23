@@ -1,0 +1,353 @@
+{
+  "set": "integration-audio",
+  "adjacent": true,
+  "cold_seconds": 1.049,
+  "counts": {
+    "tn": 39,
+    "tp": 14,
+    "fn": 1
+  },
+  "median_seconds": 0.5065,
+  "p95_seconds": 0.857,
+  "rows": [
+    {
+      "id": "0/0",
+      "slide": "Air station",
+      "transcript": "even if the power goes out, we keep the readings.",
+      "expected": [
+        2
+      ],
+      "scores": [
+        [
+          0.0083,
+          0.002933,
+          0.985527
+        ],
+        [
+          0.003934,
+          0.008937,
+          0.002147
+        ]
+      ],
+      "seconds": 0.786
+    },
+    {
+      "id": "0/1",
+      "slide": "Air station",
+      "transcript": "Every 60 seconds the station takes a humidity measurement.",
+      "expected": [
+        0
+      ],
+      "scores": [
+        [
+          0.825564,
+          0.001294,
+          0.001707
+        ],
+        [
+          0.002533,
+          0.002351,
+          0.00173
+        ]
+      ],
+      "seconds": 0.831
+    },
+    {
+      "id": "0/2",
+      "slide": "Air station",
+      "transcript": "Before any replacement sensor can be used, a technician has to approve it.",
+      "expected": [
+        1
+      ],
+      "scores": [
+        [
+          0.005141,
+          0.93866,
+          0.003929
+        ],
+        [
+          0.006476,
+          0.003743,
+          0.001178
+        ]
+      ],
+      "seconds": 0.86
+    },
+    {
+      "id": "0/3",
+      "slide": "Air station",
+      "transcript": "We keep the readings if the power fails, the station measures humidity once a minute.",
+      "expected": [
+        0,
+        2
+      ],
+      "scores": [
+        [
+          0.608983,
+          0.000941,
+          0.969613
+        ],
+        [
+          0.003411,
+          0.001566,
+          0.00142
+        ]
+      ],
+      "seconds": 0.841
+    },
+    {
+      "id": "0/4",
+      "slide": "Air station",
+      "transcript": "A technician orders the new sensors. Approval is left to the purchasing manager.",
+      "expected": [],
+      "scores": [
+        [
+          0.001341,
+          0.008903,
+          0.002475
+        ],
+        [
+          0.014777,
+          0.004942,
+          0.001409
+        ]
+      ],
+      "seconds": 0.4
+    },
+    {
+      "id": "0/5",
+      "slide": "Air station",
+      "transcript": "The humidity display refreshes each minute, but we measure humidity only every hour.",
+      "expected": [],
+      "scores": [
+        [
+          0.037724,
+          0.001501,
+          0.004443
+        ],
+        [
+          0.002764,
+          0.003938,
+          0.000561
+        ]
+      ],
+      "seconds": 0.4
+    },
+    {
+      "id": "1/0",
+      "slide": "Studio visits",
+      "transcript": "We're planning to show people around the studio in the evenings.",
+      "expected": [
+        2
+      ],
+      "scores": [
+        [
+          0.001012,
+          0.001188,
+          0.892706
+        ],
+        [
+          0.008509,
+          0.00139,
+          0.011318
+        ]
+      ],
+      "seconds": 0.856
+    },
+    {
+      "id": "1/1",
+      "slide": "Studio visits",
+      "transcript": "Nobody can join a visit without booking a spot on the website first.",
+      "expected": [
+        0
+      ],
+      "scores": [
+        [
+          0.991916,
+          0.004363,
+          0.001011
+        ],
+        [
+          0.006033,
+          0.002758,
+          0.011769
+        ]
+      ],
+      "seconds": 0.826
+    },
+    {
+      "id": "1/2",
+      "slide": "Studio visits",
+      "transcript": "Every group goes around with a guide.",
+      "expected": [
+        1
+      ],
+      "scores": [
+        [
+          0.002193,
+          0.992334,
+          0.001445
+        ],
+        [
+          0.009999,
+          0.002132,
+          0.004306
+        ]
+      ],
+      "seconds": 0.847
+    },
+    {
+      "id": "1/3",
+      "slide": "Studio visits",
+      "transcript": "All groups have a guide with them. Each visitor needs to reserve a place on the web.",
+      "expected": [
+        1,
+        0
+      ],
+      "scores": [
+        [
+          0.995431,
+          0.993852,
+          0.002194
+        ],
+        [
+          0.002347,
+          0.001118,
+          0.0028
+        ]
+      ],
+      "seconds": 0.759
+    },
+    {
+      "id": "1/4",
+      "slide": "Studio visits",
+      "transcript": "Evening tours were suggested, but we dropped that plan.",
+      "expected": [],
+      "scores": [
+        [
+          0.002179,
+          0.00226,
+          0.0
+        ],
+        [
+          0.000961,
+          0.001577,
+          0.001013
+        ]
+      ],
+      "seconds": 0.395
+    },
+    {
+      "id": "1/5",
+      "slide": "Studio visits",
+      "transcript": "You can book online if you want. You can also just turn up.",
+      "expected": [],
+      "scores": [
+        [
+          0.010169,
+          0.002506,
+          0.001855
+        ],
+        [
+          0.003702,
+          0.001699,
+          0.004241
+        ]
+      ],
+      "seconds": 0.397
+    },
+    {
+      "id": "2/0",
+      "slide": "Cooling trial",
+      "transcript": "At the outlet the engine is checked how much noise the unit's made.",
+      "expected": [
+        2
+      ],
+      "scores": [
+        [
+          0.025387,
+          0.000577,
+          0.470494
+        ]
+      ],
+      "seconds": 0.613
+    },
+    {
+      "id": "2/1",
+      "slide": "Cooling trial",
+      "transcript": "We put two different cooling systems head to head in this trial.",
+      "expected": [
+        0
+      ],
+      "scores": [
+        [
+          0.98609,
+          0.000671,
+          0.003868
+        ]
+      ],
+      "seconds": 0.197
+    },
+    {
+      "id": "2/2",
+      "slide": "Cooling trial",
+      "transcript": "Each unit kept running without a break for 6 hours.",
+      "expected": [
+        1
+      ],
+      "scores": [
+        [
+          0.002219,
+          0.990848,
+          0.002349
+        ]
+      ],
+      "seconds": 0.199
+    },
+    {
+      "id": "2/3",
+      "slide": "Cooling trial",
+      "transcript": "The engineers took noise readings at the outlet, every unit ran nonstop for 6 hours.",
+      "expected": [
+        2,
+        1
+      ],
+      "scores": [
+        [
+          0.002917,
+          0.994978,
+          0.992568
+        ]
+      ],
+      "seconds": 0.178
+    },
+    {
+      "id": "2/4",
+      "slide": "Cooling trial",
+      "transcript": "The units ran for 3 hours and then stopped for 3. The full visit took 6 hours.",
+      "expected": [],
+      "scores": [
+        [
+          0.002199,
+          0.007288,
+          0.001337
+        ]
+      ],
+      "seconds": 0.127
+    },
+    {
+      "id": "2/5",
+      "slide": "Cooling trial",
+      "transcript": "We considered a second pooling system, but only one actually took part.",
+      "expected": [],
+      "scores": [
+        [
+          0.015777,
+          0.000634,
+          0.000823
+        ]
+      ],
+      "seconds": 0.209
+    }
+  ]
+}

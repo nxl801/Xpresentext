@@ -1,0 +1,24 @@
+[
+ {"slide":"Ferry","points":["Bicycles travel free on the ferry.","The last ferry departs at nine in the evening.","Passengers must book cabins in advance.","The operator plans to add a winter route."],"cases":[
+ ["There's no fare for taking your bike on board.",[0]],
+ ["The final crossing sets off at nine at night.",[1]],
+ ["If you want a cabin, you have to reserve it ahead of time.",[2]],
+ ["The operator intends to introduce a route for the winter season.",[3]],
+ ["The last boat sets off at nine tonight. You don't pay to bring a bicycle along.",[0,1]],
+ ["Cabins need a reservation before you travel. We're planning a winter route as well.",[2,3]],
+ ["We're looking at free bicycle travel. Today a bike still needs a paid ticket.",[]],
+ ["Nine is the arrival time. The last ferry leaves an hour earlier.",[]],
+ ["There is no advance booking for cabins. You pick one on the day.",[]],
+ ["The winter route was proposed a year ago. The operator has abandoned it.",[]]]},
+ {"slide":"Water laboratory","points":["The laboratory keeps water samples for two weeks.","Each report needs signatures from two analysts.","Samples arrive in glass bottles.","The laboratory aims to shorten the waiting time for results."],"cases":[
+ ["We keep every water sample for fourteen days.",[0]],
+ ["No report goes out until a pair of analysts have signed it.",[1]],
+ ["The bottles we receive the samples in are made of glass.",[2]],
+ ["Our goal is to get people their test results sooner.",[3]],
+ ["We hold onto water samples for a fortnight. Two analysts have to sign every report.",[0,1]],
+ ["We plan to cut how long customers wait for results. Samples reach the lab in glass bottles.",[2,3]],
+ ["We need to keep the water for two weeks but the freezer broke and our policy is still one week.",[]],
+ ["Two analysts read every report. Just one of them signs.",[]],
+ ["Our own storage bottles are glass. The samples arrive here in plastic containers.",[]],
+ ["We considered faster results. That target has now been withdrawn.",[]]]}
+]

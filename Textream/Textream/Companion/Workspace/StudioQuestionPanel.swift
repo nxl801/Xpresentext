@@ -8,20 +8,25 @@ final class StudioQuestionPanel: NSObject, NSWindowDelegate {
     private weak var workspace: StudioWorkspace?
 
     func show(_ ws: StudioWorkspace) {
+        if let panel { panel.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
+        if MurmuryProcess.isInstalled { MurmuryPresenter.shared.show(ws) } else { showNative(ws) }
+    }
+
+    func showNative(_ ws: StudioWorkspace) {
         workspace = ws
         if let panel { panel.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
         let host = NSHostingController(rootView: StudioQuestionView(ws: ws, tracking: ws.tracking))
         let newPanel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 478, height: 505),
                                styleMask: [.titled, .closable, .resizable, .utilityWindow],
                                backing: .buffered, defer: false)
-        newPanel.title = "现场问答 · Textream Studio"
+        newPanel.title = "现场问答 · Xpresentext"
         newPanel.contentViewController = host
         newPanel.isReleasedWhenClosed = false
         newPanel.delegate = self
         newPanel.isFloatingPanel = true
         newPanel.hidesOnDeactivate = false
         newPanel.isOpaque = false
-        newPanel.backgroundColor = .windowBackgroundColor
+        newPanel.backgroundColor = .clear
         newPanel.level = UserDefaults.standard.object(forKey: "studio.panelPinned") as? Bool == false ? .normal : .floating
         newPanel.alphaValue = UserDefaults.standard.object(forKey: "studio.panelOpacity") as? Double ?? 0.94
         newPanel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
@@ -65,13 +70,14 @@ struct StudioQuestionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             panelHeader
-            Divider()
-            answers
-            Divider()
-            questionControls
+            answers.frame(maxWidth: .infinity, maxHeight: .infinity)
+                .modifier(StudioGlass(radius: 14))
+            questionControls.modifier(StudioGlass(radius: 12)).padding(.top, 6)
         }
+        .padding(.horizontal, 7).padding(.bottom, 7)
         .frame(minWidth: 345, minHeight: 285)
-        .background(.regularMaterial)
+        .background { StudioLunarScene(kind: .question) }
+        .environment(\.colorScheme, .dark)
         .onChange(of: tracking.phase) { old, new in
             if new != .listeningQuestion { session.clearSearch() }
             if old == .listeningQuestion, new == .awaitingResume,
@@ -196,12 +202,18 @@ struct StudioQuestionView: View {
     private var questionControls: some View {
         VStack(alignment: .leading, spacing: 9) {
             if listening {
+                Label(questionCaptureLabel, systemImage: tracking.isListening ? "waveform" : "mic")
+                    .font(.caption.weight(.semibold)).foregroundStyle(StudioColors.tint)
                 Text(tracking.questionSpeechStatus.label).font(.caption).foregroundStyle(.secondary)
-                Text(tracking.questionTranscript.isEmpty ? "请复述一道题…" : tracking.questionTranscript)
+                Text(tracking.questionTranscript.isEmpty ? emptyQuestionTranscript : tracking.questionTranscript)
                     .textSelection(.enabled)
                 HStack { Button("取消听题") { tracking.disarmQuestionCue(); tracking.cancelQuestion() }
                     Button("立即提交") { tracking.submitQuestion() }.disabled(tracking.isQuestionEnding || !tracking.canFinishQuestion) }
             } else {
+                if tracking.phase == .awaitingResume, ws.project != nil {
+                    Label("等待接回讲稿", systemImage: "arrow.turn.down.left")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 HStack {
                     TextField(editingTranscript == nil ? "输入问题，回车提交" : "修改转写，回车重问", text: $input)
                         .textFieldStyle(.roundedBorder).focused($inputFocused)
@@ -240,6 +252,17 @@ struct StudioQuestionView: View {
                 }
             }
         }.padding(12)
+    }
+
+    private var emptyQuestionTranscript: String {
+        if tracking.isQuestionEnding { return "正在整理转写…" }
+        return tracking.isListening ? "请复述一道题…" : "等待麦克风就绪"
+    }
+
+    private var questionCaptureLabel: String {
+        let activity = tracking.isQuestionEnding ? "正在完成听题" :
+            tracking.isListening ? "听题中" : "麦克风正在启动"
+        return ws.project == nil ? activity : "\(activity) · 位置已锁定"
     }
 
     private func listen(_ seed: String = "") {
@@ -296,10 +319,12 @@ struct StudioQuestionView: View {
     }
 }
 
-private struct StudioCitationPreview: View {
+struct StudioCitationPreview: View {
     @ObservedObject var ws: StudioWorkspace
     let citation: QACitation
+    var onClose: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss
+    private func closePreview() { if let onClose { onClose() } else { dismiss() } }
     @State private var showsRegion = false
     private var hasRegion: Bool { citation.region?.isValid == true }
     var body: some View {
@@ -307,7 +332,7 @@ private struct StudioCitationPreview: View {
             HStack {
                 Label("第 \(citation.pageNumber) 页 · \(citation.kind.label)", systemImage: "doc.text.magnifyingglass")
                     .foregroundStyle(StudioColors.tint).font(.headline)
-                Spacer(); Button("返回问答") { dismiss() }
+                Spacer(); Button("返回问答") { closePreview() }
             }
             if let p = ws.project, p.activeRevisionID == citation.revisionID {
                 HStack {
@@ -327,7 +352,7 @@ private struct StudioCitationPreview: View {
                     .frame(minHeight: hasRegion ? 24 : nil)
                 Button("从本页讲稿继续") {
                     ws.tracking.select(pageIndex: citation.pageIndex)
-                    dismiss()
+                    closePreview()
                 }
             }
         }.padding(16).frame(minWidth: 420, idealWidth: 490, minHeight: 370, idealHeight: 440)

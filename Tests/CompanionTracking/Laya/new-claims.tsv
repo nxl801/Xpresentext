@@ -1,0 +1,10 @@
+id	expected	p_entail_pct	ms	claim	speech
+n01	1	95.3	540	The response time fell from eight seconds to three seconds.	It used to take eight seconds to get an answer. These days you only wait three.
+n02	0	3.1	503	The response time fell from eight seconds to three seconds.	A response used to take three seconds, and now it takes eight.
+n03	0	67.9	533	The response time fell from eight seconds to three seconds.	The target is to cut response time from eight seconds to three, but we have not achieved that yet.
+n04	1	15.9	497	Only two factories are taking part in the pilot.	We are trying this at a pair of plants and nowhere else for now.
+n05	0	1.6	501	Only two factories are taking part in the pilot.	Two plants joined last week. Five factories are now in the pilot in total.
+n06	1	76.4	533	Ninety-five percent of the tests run locally.	Out of every hundred tests, just five go to the cloud and the rest run here on our own machines.
+n07	0	11.5	504	Ninety-five percent of the tests run locally.	Ninety-five percent of our tests still run in the cloud.
+n08	0	10.0	507	Ninety-five percent of the tests run locally.	We run most of our tests locally. I do not have the percentage.
+n09	0	2.4	520	The response time fell from eight seconds to three seconds.	The answer now takes three seconds. We did not measure how long it used to take.

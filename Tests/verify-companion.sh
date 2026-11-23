@@ -10,6 +10,7 @@ if ! "$python" -c 'import pptx, PIL, lxml' 2>/dev/null; then
     exit 2
 fi
 export DECK_PYTHON="$python"
+"$repo/Tests/CompanionLunarUI/run.sh"
 "$repo/Tests/CompanionTracking/verify.sh"
 "$repo/Tests/CompanionTracking/CloudSpeech/run.sh"
 "$repo/Tests/CompanionTracking/EnglishFollowTrial/check-app-sample.sh"
@@ -24,3 +25,15 @@ export DECK_PYTHON="$python"
 "$repo/Tests/CompanionIntegration/TrackingPreparation/run.sh"
 COMPANION_OFFLINE_CHECK=1 "$repo/Tests/CompanionIntegration/run.sh" "$work/decks"
 "$repo/Textream/build-local.sh"
+
+if [[ "$(uname -m)" == "arm64" ]]; then
+    QT_QPA_PLATFORM=offscreen PYTHONDONTWRITEBYTECODE=1 "$repo/Textream/build/murmury-env/bin/python" "$repo/Tests/Murmury/test_panel.py"
+    helper="$repo/Textream/build/local/current/Xpresentext.app/Contents/Helpers/MurmuryPresenter.app/Contents/MacOS/MurmuryPresenter"
+    "$python" "$repo/Tests/Murmury/packaged_smoke.py" "$helper"
+    model="$HOME/Library/Application Support/TextreamStudio/Whisper/a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb/weights.safetensors"
+    if [[ -s "$model" ]]; then
+        "$repo/Tests/Murmury/run-pipes.sh"
+    else
+        echo "SKIP paired Whisper pipe smoke: local Turbo model has not been prepared"
+    fi
+fi

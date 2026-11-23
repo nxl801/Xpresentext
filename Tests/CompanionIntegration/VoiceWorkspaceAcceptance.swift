@@ -73,7 +73,10 @@ enum VoiceWorkspaceAcceptance {
                 total += 1
                 let page = corpus.sourcePageNumbers[event.expected[0]]
                 if ws.currentSlide?.pageNumber != page { wrongPage += 1 }
-                if tracking.position?.sentenceIndex != event.expected[1] { wrongSentence += 1 }
+                if tracking.position?.sentenceIndex != event.expected[1] {
+                    wrongSentence += 1
+                    print("Sentence mismatch in \(clip.id), expected \(event.expected[1] + 1), observed \(tracking.position?.sentenceIndex.map { $0 + 1 } ?? 0)")
+                }
                 if event.kind == "resume", tracking.phase != .following { missedResume += 1 }
                 if clip.phase == "listeningQuestion", tracking.phase != .listeningQuestion {
                     throw StudioError.message("Replayed question released its position lock")

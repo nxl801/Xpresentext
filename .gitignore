@@ -35,6 +35,3 @@ Pods/
 *~
 *.orig
 *.log
-
-# Local test environments
-.venv/

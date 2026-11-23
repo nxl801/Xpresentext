@@ -125,7 +125,7 @@ nonisolated enum StudioCredentials {
             }
         }
         if status == 100002 {
-            throw StudioError.message("macOS 找不到正在运行的应用文件。请重新打开 Textream Studio，再保存密钥。")
+            throw StudioError.message("macOS 找不到正在运行的应用文件。请重新打开 Xpresentext，再保存密钥。")
         }
         guard status == errSecSuccess else { throw StudioError.message("无法保存密钥（\(status)）。") }
     }

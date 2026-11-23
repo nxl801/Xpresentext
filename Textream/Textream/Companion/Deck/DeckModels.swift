@@ -119,6 +119,10 @@ struct DeckSlide: Codable, Hashable, Identifiable, Sendable {
     var image: DeckSlideImage?
     var visuals: [DeckVisual]
     var cueTargets: [DeckCueTarget]?
+    var hasIndexedCueTargets: Bool {
+        cueTargets?.contains(where: { $0.isSlideTitle != nil }) == true
+    }
+
     var manualCueRegions: [String: DeckRegion]?
     let contentFingerprint: String
 }

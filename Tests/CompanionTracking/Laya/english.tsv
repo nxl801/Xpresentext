@@ -1,0 +1,23 @@
+id	set	expected	score_ms	score_meetings	score_tracing	score_approval	choice_ms	p_meetings_pct	p_tracing_pct	p_approval_pct	speech
+paraphrase	base	meetings	1420	2.36	2.10	2.30	1319	87.2	22.7	59.2	Everybody works from the same approved spec now, so we have dropped several coordination calls.
+neutral	base	-	1378	2.19	2.06	1.79	1284	18.4	27.6	42.9	Thanks for joining. We have coffee and some time for introductions.
+partial	base	-	1303	2.54	2.02	2.27	1197	19.3	12.1	53.9	Everyone works from the same approved requirements document.
+negation	base	-	1438	2.17	2.10	2.04	1335	29.8	15.9	45.5	Everyone uses the same approved requirements now, but we still have just as many coordination meetings as before.
+question	base	-	1407	2.24	2.00	2.23	1295	29.2	10.1	54.9	Would using the same approved requirements actually reduce coordination meetings? We do not know yet.
+trace	base	tracing	1423	2.35	2.37	2.24	1321	25.2	91.8	51.5	If a customer changes a requirement, our engineers know exactly which checks they need to run again.
+signoff	base	approval	1365	2.17	2.19	2.40	1259	13.1	14.1	87.1	Nothing goes out the door until a person has signed off on it.
+wrong_actor	base	-	1387	2.35	1.79	0.49	1286	13.5	7.1	7.2	Every release is approved automatically by a bot. No person has to sign off.
+multi	base	tracing approval	1499	2.35	2.15	2.42	1395	36.5	29.3	94.6	Before anything ships a real person has to give the go-ahead. A requirement edit also tells us which tests to repeat.
+reverse	base	meetings	1355	2.37	2.10	2.08	1249	30.5	26.1	61.4	We meet less often because everybody uses one agreed set of requirements.
+split	base	tracing	1462	2.31	2.42	2.33	1361	20.7	89.0	59.6	Our engineers receive the revised requirements. From those edits they can pinpoint the checks that have to be repeated.
+gap	base	meetings approval	1466	2.27	2.20	2.46	1357	72.8	9.7	96.0	A person signs off on every release. Sharing one approved requirements document has cut the number of coordination calls.
+future	base	-	1426	2.07	2.10	0.91	1319	45.8	11.3	18.4	One day we might require people to review releases. Today, sign-off is entirely automatic.
+identity	base	tracing	1411	2.22	2.03	2.15	1285	25.5	47.5	61.6	When requirements change, the team can identify the tests that must be rerun.
+numbers	holdout	-					1296	24.6	32.5	65.2	The new tool shortened our meetings, but we still hold exactly as many of them.
+agent	holdout	-					1284	13.6	14.2	59.7	The build is shipped once the software agent approves it. Nobody reviews releases.
+newpar	holdout	meetings					1295	52.6	8.4	71.1	Having a single signed-off specification lets everyone cancel several of their regular sync calls.
+unrelated	holdout	-					1294	37.1	41.8	69.4	Friday lunch will be in the large cafeteria, just after the team photo.
+changed	holdout	tracing					1383	40.2	93.1	64.5	A changed requirement used to mean running everything again. Now we can tell exactly which tests were affected and repeat just those.
+person	holdout	approval					1297	35.5	16.8	88.3	For each release the final green light has to come from someone on the review team.
+maybe	holdout	-					1432	18.8	8.6	62.5	Do people have to authorize every release, and can we identify the tests affected by a changed requirement? We have no answer to either question.
+two	holdout	tracing approval					1382	22.0	55.7	93.8	When a specification changes, we know which tests to run again. And every release waits for a person to authorize it.

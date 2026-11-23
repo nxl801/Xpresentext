@@ -1,0 +1,26 @@
+[
+ {"slide":"Museum","points":["The museum lends audio guides free of charge.","Photography is permitted without flash.","Members may enter half an hour before the public.","The museum plans to open a second gallery."],
+ "cases":[
+ ["Getting the audio guide costs you nothing.",[0]],
+ ["Cameras are fine inside, provided the flash stays off.",[1]],
+ ["If you have a membership you get in thirty minutes ahead of everybody else.",[2]],
+ ["We intend to open another gallery. Anyone can borrow our audio guide without paying.",[0,3]],
+ ["Keep the flash turned off and you're welcome to take pictures. Members have a thirty-minute head start at the door.",[1,2]],
+ ["The museum's plan is to add a second gallery.",[3]],
+ ["Free guides were suggested. We still charge for them.",[]],
+ ["Our members get half an hour extra at closing time and enter at the usual public time.",[]],
+ ["A second gallery was proposed last year. Trustees abandoned the idea.",[]],
+ ["There is no restriction on flash in the shop. Inside the museum taking any pictures is forbidden.",[]]]},
+ {"slide":"Delivery service","points":["Customers can change the delivery address until noon.","The courier photographs every damaged box.","The company aims to replace its diesel vans.","Two people check each outgoing order."],
+ "cases":[
+ ["Need to send it somewhere else? You have until midday to change where we deliver.",[0]],
+ ["Any time a box is damaged, the courier takes its picture.",[1]],
+ ["Switching away from diesel vans is something our company plans to do.",[2]],
+ ["Every order leaving the depot gets checked by a pair of people.",[3]],
+ ["We're aiming to replace the diesel vans. The courier already takes a photo of each damaged package.",[1,2]],
+ ["A pair of checkers goes over all orders before dispatch. You can update the delivery address right up to twelve noon.",[0,3]],
+ ["We asked for address changes until noon, but the cutoff is nine in the morning.",[]],
+ ["The courier photographs damaged boxes only if the customer requests a picture.",[]],
+ ["We considered replacing the diesels but dropped the plan.",[]],
+ ["Two people work at dispatch, but each order is checked by only one of them.",[]]]}
+]

@@ -151,8 +151,8 @@ enum QAServiceError: Error, Sendable, Equatable, LocalizedError {
         switch self {
         case .missingCredentials: "请在「模型与显示设置」中保存所选服务的 API 密钥。"
         case .missingBigmodelStandardCredentials: "请在「模型与显示设置」中保存智谱国内标准 API 密钥。Coding Plan 套餐密钥供智谱支持的工具使用。"
-        case .missingGrokCLI: "未找到 Grok Build CLI。请先安装 Grok Build，再重新打开 Textream Studio。"
-        case .missingGrokLogin: "Grok Build CLI 尚未登录或登录已失效。请在终端运行 ~/.grok/bin/grok login，再回到 Textream Studio 重试。"
+        case .missingGrokCLI: "未找到 Grok Build CLI。请先安装 Grok Build，再重新打开 Xpresentext。"
+        case .missingGrokLogin: "Grok Build CLI 尚未登录或登录已失效。请在终端运行 ~/.grok/bin/grok login，再回到 Xpresentext 重试。"
         case .grokCLIImagesUnsupported: "Grok CLI 当前只接收文字。可使用本机图表证据，或手动选择支持读图的服务。"
         case .grokCLIIsolationUnavailable: "无法在隔离模式下启动 Grok CLI。请检查本机 Grok Build 安装与受管理配置，或选择其他模型。"
         case .invalidModel: "所选模型的设置不可用。"

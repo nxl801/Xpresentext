@@ -84,6 +84,93 @@ nonisolated enum StudioSpeechCredentials {
     }
 }
 
+struct StudioFollowSettings: View {
+    @ObservedObject var tracking: CompanionTrackingController
+    @State private var sample: MurmuryProcess?
+    @State private var sampleStatus = ""
+    @State private var sampleTranscript = ""
+    @State private var timeout: Task<Void, Never>?
+    var body: some View {
+        Picker("跟读听写", selection: Binding(get: { tracking.followEngine }, set: { engine in
+            UserDefaults.standard.set(engine.rawValue, forKey: "studio.followEngine")
+            tracking.selectFollowEngine(engine)
+        })) {
+            Text("Apple 听写").tag(CompanionFollowEngine.apple)
+            Text("Whisper Turbo").tag(CompanionFollowEngine.whisper)
+        }
+        HStack {
+            Text("Whisper Turbo · " + (sample == nil ? tracking.whisperStateLabel : sampleStatus))
+                .font(.callout)
+            Spacer()
+            if Bundle.main.url(forResource: "strong-paraphrase", withExtension: "wav", subdirectory: "EnglishFollowSamples") != nil {
+            Button(sample != nil ? "停止测试" : tracking.whisperInstalled == false ? "下载并测试（1.6 GB）" : "用样音测试") {
+                if sample != nil { stopSample() } else { testSample() }
+            }.disabled(tracking.isStarting || tracking.isListening)
+            }
+        }
+        .help("用内置英文录音测试 Whisper，不使用麦克风。开始实际跟读时加载模型，停止时释放内存。")
+        if !sampleTranscript.isEmpty {
+            Text(sampleTranscript).font(.caption).textSelection(.enabled)
+        }
+        if tracking.freeSpeaking {
+            Text("FineCat · " + tracking.coverage.modelLabel + "（英文要点匹配）").font(.callout)
+        }
+        Text("Whisper 将语音转成文字。自由讲解时，FineCat 根据文字判断已讲要点。")
+            .font(.caption).foregroundStyle(.secondary)
+            .onAppear { tracking.checkWhisperFiles() }
+            .onDisappear { stopSample() }
+    }
+
+    private func stopSample() {
+        timeout?.cancel()
+        timeout = nil
+        sample?.stop()
+        sample = nil
+        tracking.checkWhisperFiles()
+    }
+
+    private func testSample() {
+        guard let clips = try? CompanionEnglishFollowSample.load(),
+              let clip = clips.first(where: { $0.id == "strong-paraphrase" }) else {
+            sampleTranscript = "未找到内置英文样音。"
+            return
+        }
+        sampleStatus = "启动中"
+        sampleTranscript = ""
+        var result = ""
+        var scorer = CompanionEnglishFollowSample.Scorer(clip)
+        do {
+            sample = try MurmuryProcess(script: "speech", arguments: ["wav", "en-US", clip.url.path], receive: { event in
+                switch event["type"] as? String {
+                case "status": sampleStatus = event["stage"] as? String == "downloading" ? "下载中" : "加载中"
+                case "ready":
+                    sampleStatus = "已加载 · 正在听样音"
+                    timeout = Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(35))
+                        guard !Task.isCancelled, sample != nil else { return }
+                        sampleTranscript = "样音测试超时，请重试。"
+                        stopSample()
+                    }
+                case "transcript":
+                    if let text = event["text"] as? String {
+                        scorer.observe(text, atMs: nil)
+                        if event["final"] as? Bool == true { result += (result.isEmpty ? "" : " ") + text }
+                    }
+                case "error": sampleTranscript = event["message"] as? String ?? "Whisper 测试失败，请重试。"
+                default: break
+                }
+            }, closed: { status in
+                if status == 0 && !result.isEmpty {
+                    let outcome = scorer.finish().passed ? "已定位到示例讲稿第 2 句" : "已收到转写，未准确定位示例句"
+                    sampleTranscript = outcome + "\n" + result
+                }
+                else if sampleTranscript.isEmpty { sampleTranscript = "样音未产生转写，请重试。" }
+                stopSample()
+            })
+        } catch { sampleTranscript = "无法启动 Whisper 组件。" }
+    }
+}
+
 struct StudioSpeechSettings: View {
     @AppStorage(StudioSpeechProvider.selectionPreference) private var provider = StudioSpeechProvider.defaultProvider()
     @AppStorage(StudioSpeechProvider.workspacePreference) private var workspace = ""
@@ -127,13 +214,24 @@ struct StudioSpeechSettings: View {
                     Button("保存语音密钥") { save() }
                         .disabled(key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
+                if Bundle.main.url(forResource: "CompanionSpeechSample", withExtension: "wav") != nil {
                 DisclosureGroup("开发验收", isExpanded: $diagnosticsExpanded) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("此发行版不包含演示样音。真实麦克风听题与跟随功能不受影响。")
-                            .font(.caption).foregroundStyle(.secondary)
+                        Button(sampleTask == nil ? "用中英样音检查转写" : "正在识别样音…") { compareSample() }
+                            .disabled(sampleTask != nil || !key.isEmpty)
+                            .help("只发送内置的合成中英样音。不开启麦克风。")
+                        if !sampleResult.isEmpty {
+                            ScrollView {
+                                Text(sampleResult).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
+                            }
+                            .frame(maxHeight: 108)
+                            .font(.caption)
+                        }
+                        StudioEnglishFollowSample(provider: provider, enabled: sampleTask == nil && key.isEmpty)
                     }
                     .padding(.top, 8)
                     .onDisappear { clearSample() }
+                }
                 }
             }.padding(.top, 8)
             .onAppear { refresh() }

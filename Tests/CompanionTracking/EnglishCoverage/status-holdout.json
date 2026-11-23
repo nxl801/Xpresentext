@@ -1,0 +1,34 @@
+[
+  {
+    "slide": "Library",
+    "points": ["Members can renew loans online.", "The mobile library visits three villages.", "Children borrow books free of charge.", "The library plans to add a Sunday service."],
+    "cases": [
+      ["Renewing your loan? Members can already do it on the website. We hope to replace the website next year.", [0]],
+      ["We take the travelling library to three different villages. A fourth village has asked for visits.", [1]],
+      ["Kids pay nothing to borrow a book from us.", [2]],
+      ["Sunday opening is something the library plans to introduce.", [3]],
+      ["We intend to open on Sundays. Children can already take books out for free.", [2,3]],
+      ["Our van calls at a trio of villages. Members who want to extend a loan can do it on the web.", [0,1]],
+      ["Online renewal has been requested. For now, you have to come to the desk.", []],
+      ["We'd love to visit three villages. The van only visits one today.", []],
+      ["Adults borrow books for free. We still charge children.", []],
+      ["Sunday service was proposed, but the library has dropped the plan.", []]
+    ]
+  },
+  {
+    "slide": "Maintenance",
+    "points": ["The crew inspects each pump every Friday.", "Only the mechanic signs the repair record.", "Replacement batteries last eight hours.", "The team aims to halve repair time."],
+    "cases": [
+      ["On Fridays the crew goes through every single pump for inspection.", [0]],
+      ["Nobody except the mechanic puts a signature on the repair log.", [1]],
+      ["Fit a replacement battery and you get eight hours out of it.", [2]],
+      ["We want to cut the time it takes us to fix things in half.", [3]],
+      ["The plan is to get repairs done in half the time. New batteries already keep going for eight hours.", [3,2]],
+      ["Every Friday the crew checks all the pumps. Only the mechanic is authorized to sign the repair log.", [0,1]],
+      ["We asked for batteries that last eight hours. These replacements last five.", []],
+      ["The mechanic signs the repair record and so does the shift supervisor.", []],
+      ["The crew would like to inspect the pumps every Friday. We currently inspect them once a month.", []],
+      ["Cutting repair time in half was suggested. We rejected that target.", []]
+    ]
+  }
+]

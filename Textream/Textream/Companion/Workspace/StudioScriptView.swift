@@ -5,6 +5,9 @@ struct StudioScriptView: View {
     @ObservedObject var tracking: CompanionTrackingController
     let project: DeckProject
     let slide: DeckSlide
+    @Binding var fontSize: Int
+    private var scale: CGFloat { CGFloat(fontSize) / 17 }
+    var currentPageOnly = false
     @State private var editing = false
     @State private var editedText = ""
     private var isDraft: Bool { slide.script.origin == .ai && !slide.script.aiConfirmed }
@@ -13,51 +16,72 @@ struct StudioScriptView: View {
     @AppStorage("studio.showFullScript") private var showFullScript = false
     @AppStorage("studio.enlargeCurrentWord") private var enlargeCurrentWord = false
     private var visiblePositions: [CompanionTrackingPosition] {
-        if showFullScript || slide.isAppendix {
+        if tracking.freeSpeaking {
             return sentences.indices.map { CompanionTrackingPosition(pageIndex: slide.pageNumber - 1, sentenceIndex: $0) }
         }
-        return tracking.readingWindow(upcoming: upcoming)
+        if showFullScript || slide.isAppendix {
+            let page = slide.pageNumber - 1
+            let rows = sentences.indices.map { CompanionTrackingPosition(pageIndex: page, sentenceIndex: $0) }
+            if !slide.isAppendix, let previous = tracking.previousReadPosition, previous.pageIndex < page {
+                return tracking.previousPageAnchor?.pageIndex == previous.pageIndex ? rows : [previous] + rows
+            }
+            return rows
+        }
+        let window = tracking.readingWindow(upcoming: upcoming).filter { $0.pageIndex != tracking.previousPageAnchor?.pageIndex }
+        return currentPageOnly ? window.filter { $0.pageIndex <= slide.pageNumber - 1 } : window
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 12) {
-                Text("逐页讲稿").font(.headline)
-                if isDraft {
-                    Text("AI 补稿").font(.caption).foregroundStyle(StudioColors.color(project.draftColorHex))
-                    Button("确认为我的讲稿") { ws.editCurrentSlide { $0.script.confirmAI() } }.font(.caption)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) { scriptTitle; Spacer(); fontControls; scriptControls }
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack { scriptTitle; Spacer(); fontControls }
+                    scriptControls
                 }
-                Spacer()
-                if !sentences.isEmpty {
-                    Menu {
-                        Picker("预读范围", selection: Binding(get: { upcoming }, set: { upcoming = $0; showFullScript = false })) {
-                            ForEach(1...8, id: \.self) { n in Text("后面 \(n) 句").tag(n) }
-                        }.pickerStyle(.inline)
-                        Divider()
-                        Toggle("查看本页全文", isOn: $showFullScript)
-                        Toggle("放大当前词", isOn: $enlargeCurrentWord)
-                    } label: {
-                        Text(showFullScript || slide.isAppendix ? "本页全文" : "预读 \(upcoming) 句")
-                            .foregroundStyle(.primary)
-                    }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
-                    .accessibilityLabel("调整讲稿显示范围")
+            }.padding(.horizontal, 14).padding(.vertical, 9)
+            if tracking.mode == .english && !slide.isAppendix {
+                HStack(spacing: 8) {
+                    Picker("讲稿模式", selection: Binding(get: { tracking.freeSpeaking }, set: tracking.setFreeSpeaking)) {
+                        Text("逐句跟读").tag(false)
+                        Text("自由讲解").tag(true)
+                    }.pickerStyle(.segmented).labelsHidden().fixedSize()
+                    Spacer(minLength: 0)
+                }.font(.caption).padding(.horizontal, 16).padding(.bottom, 5)
+                if tracking.freeSpeaking {
+                    HStack(spacing: 6) {
+                        let page = slide.pageNumber - 1
+                        let total = sentences.filter { !CompanionTrackingPage.wordRanges(in: $0).isEmpty }.count
+                        let done = tracking.coverage.covered.filter { $0.pageIndex == page }.count
+                        Text(done < total ? "本页还有 \(total - done) 项待讲" : total == 0 ? "本页暂无要点" : "本页已讲完 · 手动翻页")
+                            .monospacedDigit()
+                            .accessibilityValue("已讲 \(done)/\(total)")
+                        Spacer(minLength: 0)
+                        Menu {
+                            if MurmuryProcess.isInstalled {
+                                if tracking.coverage.state != .ready {
+                                    Button("下载或修复 FineCat（1.5 GB）") { tracking.coverage.startModel(download: true) }
+                                        .disabled(tracking.coverage.state == .loading)
+                                }
+                                Button("选择 FineCat 模型文件夹…") {
+                                    let picker = NSOpenPanel()
+                                    picker.canChooseFiles = false
+                                    picker.canChooseDirectories = true
+                                    if picker.runModal() == .OK, let url = picker.url { tracking.coverage.startModel(download: false, directory: url) }
+                                }
+                                Divider()
+                            }
+                            Button("清空本场已讲记录") { tracking.coverage.reset() }
+                        } label: { Text("FineCat · " + tracking.coverage.modelLabel) }
+                        .menuStyle(.borderlessButton).fixedSize()
+                        .help("FineCat 负责判断讲过哪些要点。听写引擎显示在窗口底部。")
+                    }.font(.caption).padding(.horizontal, 16).padding(.bottom, 5)
                 }
-                if slide.script.isEmpty && !slide.isAppendix {
-                    Button {
-                        ws.generateDraft()
-                    } label: {
-                        Label(ws.generatingPage == slide.pageNumber - 1 ? "正在生成…" : "生成英文稿", systemImage: "sparkles")
-                    }
-                    .disabled(ws.generatingPage != nil)
+                if tracking.freeSpeaking && tracking.coverage.state != .ready {
+                    Text(tracking.coverage.status).font(.caption).foregroundStyle(.secondary)
+                        .padding(.horizontal, 16).padding(.bottom, 4).textSelection(.enabled)
                 }
-                Button {
-                    tracking.stopFollowing()
-                    editedText = slide.script.text
-                    editing = true
-                } label: { Label("编辑", systemImage: "pencil") }
-            }.padding(.horizontal, 20).padding(.vertical, 11)
+            }
             if sentences.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(slide.isAppendix ? "备查附录" : "本页尚无讲稿").font(.title3.weight(.medium))
@@ -74,18 +98,21 @@ struct StudioScriptView: View {
                                 if position.pageIndex != slide.pageNumber - 1,
                                    offset == 0 || positions[offset - 1].pageIndex != position.pageIndex {
                                     Divider()
-                                    Label("预览第 \(position.pageIndex + 1) 页", systemImage: "arrow.turn.down.right")
+                                    Text(position.pageIndex < slide.pageNumber - 1
+                                         ? "第 \(position.pageIndex + 1) 页 · 已读"
+                                         : "预览第 \(position.pageIndex + 1) 页")
                                         .font(.caption.weight(.semibold)).foregroundStyle(StudioColors.tint)
                                 }
                                 sentenceButton(position)
                             }
                         }.padding(.horizontal, 14).padding(.bottom, 12)
                     }
-                    .onChange(of: tracking.position, initial: true) { _, position in
+                    .onChange(of: tracking.coverage.liveWord?.position ?? tracking.promptPosition, initial: true) { _, position in
+                        if tracking.freeSpeaking { if let position { proxy.scrollTo(position, anchor: .center) }; return }
                         if let target = showFullScript ? position : visiblePositions.first { proxy.scrollTo(target, anchor: showFullScript ? .center : .top) }
                     }
                     .onChange(of: showFullScript) { _, full in
-                        if let position = tracking.position { proxy.scrollTo(position, anchor: full ? .center : .top) }
+                        if let target = full ? tracking.promptPosition : visiblePositions.first { proxy.scrollTo(target, anchor: full ? .center : .top) }
                     }
                 }
             }
@@ -107,32 +134,111 @@ struct StudioScriptView: View {
         }
     }
 
+    private var scriptTitle: some View {
+        HStack(spacing: 8) {
+            Text("本页讲稿").font(.headline)
+            if isDraft {
+                Text("AI 补稿").font(.caption).foregroundStyle(StudioColors.color(project.draftColorHex))
+                Button("确认为我的讲稿") { ws.editCurrentSlide { $0.script.confirmAI() } }.font(.caption)
+            }
+        }
+    }
+
+    private var fontControls: some View {
+        HStack(spacing: 4) {
+            Button("A−") { fontSize = max(12, fontSize - 1) }
+                .disabled(fontSize <= 12).help("缩小讲稿字号").accessibilityLabel("缩小讲稿字号")
+            Text("\(fontSize)").monospacedDigit().font(.caption)
+                .accessibilityLabel("讲稿字号 \(fontSize) 点")
+            Button("A+") { fontSize = min(32, fontSize + 1) }
+                .disabled(fontSize >= 32).help("放大讲稿字号").accessibilityLabel("放大讲稿字号")
+        }.controlSize(.small).fixedSize()
+    }
+
+    private var scriptControls: some View {
+        HStack(spacing: 8) {
+            if !sentences.isEmpty && !tracking.freeSpeaking {
+                Menu {
+                    Picker("预读范围", selection: Binding(get: { upcoming }, set: { upcoming = $0; showFullScript = false })) {
+                        ForEach(1...8, id: \.self) { n in Text("后面 \(n) 句").tag(n) }
+                    }.pickerStyle(.inline)
+                    Divider()
+                    Toggle("查看本页全文", isOn: $showFullScript)
+                    Toggle("放大当前词", isOn: $enlargeCurrentWord)
+                } label: {
+                    Text(showFullScript || slide.isAppendix ? "本页全文" : "预读 \(upcoming) 句")
+                        .foregroundStyle(.primary)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .accessibilityLabel("调整讲稿显示范围")
+            }
+            if slide.script.isEmpty && !slide.isAppendix {
+                Button {
+                    ws.generateDraft()
+                } label: {
+                    Label(ws.generatingPage == slide.pageNumber - 1 ? "正在生成…" : "生成英文稿", systemImage: "sparkles")
+                }
+                .disabled(ws.generatingPage != nil)
+            }
+            Button {
+                tracking.stopFollowing()
+                editedText = slide.script.text
+                editing = true
+            } label: { Label("编辑", systemImage: "pencil") }
+        }
+    }
+
     @ViewBuilder private func sentenceButton(_ position: CompanionTrackingPosition) -> some View {
         if let sentence = tracking.text(at: position), ws.slides.indices.contains(position.pageIndex) {
-            let current = position == tracking.position
+            let current = position == (tracking.coverage.liveWord?.position ?? tracking.promptPosition)
+            let done = tracking.freeSpeaking && tracking.coverage.covered.contains(position)
             let source = ws.slides[position.pageIndex].script
             Button { tracking.select(pageIndex: position.pageIndex, sentenceIndex: position.sentenceIndex) } label: {
                 HStack(alignment: .top, spacing: 10) {
-                    Rectangle().fill(current ? StudioColors.tint : .clear).frame(width: 3)
-                    Text(styled(sentence, at: position, isDraft: source.origin == .ai && !source.aiConfirmed))
-                        .font(.system(size: current ? 20 : 17, weight: current ? .medium : .regular))
-                        .lineSpacing(4).frame(maxWidth: .infinity, alignment: .leading)
+                    if tracking.freeSpeaking {
+                        Image(systemName: done ? "checkmark.circle.fill" : current ? "arrowtriangle.right.fill" : "circle")
+                            .font(.system(size: done || current ? 10 : 6))
+                            .foregroundStyle(current ? StudioColors.tint : Color.secondary)
+                            .frame(width: 12, height: 20 * scale)
+                            .accessibilityHidden(true)
+                    } else {
+                        Rectangle().fill(current ? StudioColors.tint : .clear).frame(width: 3)
+                    }
+                    Text(Self.styled(sentence, at: position, isDraft: source.origin == .ai && !source.aiConfirmed, project: project, tracking: tracking, scale: scale, enlargeCurrentWord: enlargeCurrentWord))
+                        .font(.system(size: (current ? 20 : 17) * scale, weight: current ? .medium : .regular))
+                        .lineSpacing(4 * scale).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.vertical, 5).padding(.horizontal, 7)
-                .background(current ? StudioColors.tint.opacity(0.085) : Color.clear)
+                .background(current ? StudioColors.tint.opacity(0.15) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 5))
             }
             .buttonStyle(.plain).id(position)
             .accessibilityLabel("从第 \(position.pageIndex + 1) 页此句继续：\(sentence)")
+            .accessibilityValue(tracking.freeSpeaking ? (done ? "已讲" : "待讲") : "")
         }
     }
 
-    private func styled(_ text: String, at position: CompanionTrackingPosition, isDraft: Bool) -> AttributedString {
+    static func styled(_ text: String, at position: CompanionTrackingPosition, isDraft: Bool,
+                       project: DeckProject, tracking: CompanionTrackingController,
+                       scale: CGFloat, enlargeCurrentWord: Bool) -> AttributedString {
         var value = AttributedString(text)
         value.foregroundColor = isDraft ? StudioColors.color(project.draftColorHex) : Color.primary
-        if let marked = tracking.readWords[position] {
-            let last = position == tracking.position ? marked.last : nil
-            let base = isDraft ? StudioColors.color(project.draftColorHex) : Color.secondary
+        let readColor = Color.secondary.opacity(0.80)
+        if tracking.freeSpeaking {
+            value.foregroundColor = tracking.coverage.covered.contains(position) ? readColor : Color.primary
+            if let live = tracking.coverage.liveWord, live.position == position {
+                let ranges = CompanionTrackingPage.wordRanges(in: text)
+                if ranges.indices.contains(live.index), let range = Range(ranges[live.index], in: value) {
+                    value[range].foregroundColor = StudioColors.tint
+                    value[range].underlineStyle = .single
+                }
+            }
+        } else if let marked = tracking.readWords[position] {
+            let prompt = tracking.promptPosition
+            let past = prompt.map { (position.pageIndex, position.sentenceIndex ?? -1) < ($0.pageIndex, $0.sentenceIndex ?? -1) } ?? false
+            if past && position != tracking.position { value.foregroundColor = readColor }
+            let last = position == tracking.position && (position == prompt || position == tracking.previousPageAnchor) ? marked.last : nil
             let words = CompanionTrackingPage.wordRanges(in: text)
             for index in marked where words.indices.contains(index) {
                 var range = words[index]
@@ -144,11 +250,11 @@ struct StudioScriptView: View {
                 guard let lo = AttributedString.Index(range.lowerBound, within: value),
                       let hi = AttributedString.Index(range.upperBound, within: value) else { continue }
                 if index == last {
-                    value[lo..<hi].foregroundColor = isDraft ? base : StudioColors.tint
+                    value[lo..<hi].foregroundColor = isDraft ? StudioColors.color(project.draftColorHex) : StudioColors.tint
                     value[lo..<hi].underlineStyle = .single
-                    value[lo..<hi].font = .system(size: enlargeCurrentWord ? 24 : 20, weight: .bold)
+                    value[lo..<hi].font = .system(size: (enlargeCurrentWord ? 24 : 20) * scale, weight: .bold)
                 } else {
-                    value[lo..<hi].foregroundColor = isDraft ? base.opacity(0.70) : base
+                    value[lo..<hi].foregroundColor = readColor
                 }
             }
         }
@@ -206,6 +312,7 @@ struct StudioSettings: View {
                         }
                     }
                     if !feedback.isEmpty { Text(feedback).font(.callout) }
+                    if MurmuryProcess.isInstalled { StudioFollowSettings(tracking: ws.tracking) }
                     StudioSpeechSettings()
                     Toggle("中文关键点模式（点击定位）", isOn: $ws.chineseKeyPoints)
                     if let p = ws.project {

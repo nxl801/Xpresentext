@@ -1,0 +1,77 @@
+[
+  {
+    "slide": "Warehouse",
+    "points": ["Incoming parcels are weighed before they are sorted.", "Only cold-chain deliveries use the blue door.", "A driver can collect a parcel without a paper receipt.", "The evening collection leaves at seven."],
+    "cases": [
+      ["Each night the collection van pulls out at seven o'clock.", [3]],
+      ["We deal with arrivals in two steps. They go on the scales first and into their sorting lanes afterwards.", [0]],
+      ["No printout? A driver can still pick up the package.", [2]],
+      ["That blue entrance is reserved for shipments that must stay refrigerated.", [1]],
+      ["Anything that comes in goes on the scale before anyone routes it. And at seven in the evening the outbound pickup gets going.", [0,3]],
+      ["Only loads that have to stay cold get in through the blue entrance. Drivers don't have to bring a printed slip to pick up their packages.", [1,2]],
+      ["We weigh everything after we've sorted it. The blue entrance is for all deliveries.", []],
+      ["Could we let drivers collect packages without a receipt? Today they must bring the paper copy.", []],
+      ["The evening collection leaves at six. Seven is when the shift ends.", []]
+    ]
+  },
+  {
+    "slide": "Training",
+    "points": ["New hires have a mentor for their first month.", "The practical assessment is conducted in pairs.", "Staff may repeat the written exam once.", "The pilot trained forty technicians."],
+    "cases": [
+      ["We put the candidates two at a time for the hands-on assessment.", [1]],
+      ["Forty techs finished the pilot training.", [3]],
+      ["If the written paper goes badly, staff get one more attempt.", [2]],
+      ["Every newcomer has someone mentoring them throughout month one.", [0]],
+      ["A mentor stays with each new starter for their first month. On the floor we have them take the practical assessment two by two.", [0,1]],
+      ["The trial course trained four groups of ten technicians. A member of staff gets a single retry on the written test.", [3,2]],
+      ["We invited forty technicians. Only twenty had actually completed the pilot training by Friday.", []],
+      ["People sit the written test in pairs, but take the practical individually.", []],
+      ["Managers want a month of mentoring. At present new starters only get one day.", []]
+    ]
+  },
+  {
+    "slide": "Service desk",
+    "points": ["Customers can reopen a closed ticket for seven days.", "Only the service owner can change the priority.", "The night shift answers urgent calls within ten minutes.", "A supervisor reviews every refund."],
+    "cases": [
+      ["After we close a case, the customer has a week to open it again.", [0]],
+      ["Nobody apart from the person who owns the service can alter a ticket's priority.", [1]],
+      ["When it's urgent and you ring overnight, the team answers in ten minutes or less.", [2]],
+      ["All refunds cross a supervisor's desk for review.", [3]],
+      ["Every refund gets reviewed by a supervisor. Once their ticket is closed customers have seven days to bring it back.", [3,0]],
+      ["At night urgent phone calls get picked up inside ten minutes. Priority changes are the service owner's privilege alone.", [2,1]],
+      ["The service owner may change the priority. The on-call technician can do it too.", []],
+      ["We hope to answer urgent calls in ten minutes at night. At the moment the wait is half an hour.", []],
+      ["A supervisor reviews refunds above a thousand dollars. Smaller refunds are issued without review.", []]
+    ]
+  },
+  {
+    "slide": "Field trial",
+    "points": ["The sensor stores readings locally when the network is down.", "The trial lasted six weeks.", "Temperature is sampled every five minutes.", "Two operators independently checked each alert."],
+    "cases": [
+      ["Each alarm was double-checked by two operators working separately.", [3]],
+      ["Lose the connection and the sensor keeps its readings on the device.", [0]],
+      ["Six weeks elapsed between the start and the end of our trial.", [1]],
+      ["We take a temperature reading once every five minutes.", [2]],
+      ["The trial ran for six weeks. Offline the unit itself keeps the readings until it can reconnect.", [1,0]],
+      ["Every five minutes we sample the temperature. Each alert got separate checks from two operators.", [2,3]],
+      ["The unit loses readings during an outage. Local buffering is something we hope to add.", []],
+      ["We scheduled six weeks but stopped the trial after week four.", []],
+      ["Two operators checked each alert together and signed a single joint assessment.", []]
+    ]
+  },
+  {
+    "slide": "Release process",
+    "points": ["Only the test lead may stop a release.", "The rollback takes less than four minutes.", "Release notes are available in French and English.", "A backup is taken before each upgrade."],
+    "cases": [
+      ["We make a backup every single time, before we install the upgrade.", [3]],
+      ["If we need to revert, we're back in under four minutes.", [1]],
+      ["We publish each set of release notes in both English and French.", [2]],
+      ["Halting a release is a decision reserved for the lead tester alone.", [0]],
+      ["Nobody but the test lead can call off a release. Rolling back takes us under four minutes.", [0,1]],
+      ["You can read the release notes in French or in English. No upgrade begins until a backup has been made.", [2,3]],
+      ["Four minutes is our rollback target. The fastest rollback so far took six minutes.", []],
+      ["There's an English version of the release notes. The French translation has only been requested.", []],
+      ["We regularly make a backup after upgrading. We never take one before.", []]
+    ]
+  }
+]

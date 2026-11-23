@@ -1,0 +1,35 @@
+[
+ {"slide":"Test bench","points":["The rig logs temperature every second.","Each alarm needs a human acknowledgement.","Testing continues when the network connection drops.","The team plans to automate calibration."],"cases":[
+ ["If the network cuts out, the test keeps running.",[2]],
+ ["The rig writes down the temperature once a second.",[0]],
+ ["A person has to acknowledge every alarm we get.",[1]],
+ ["Automating calibration is on our team's roadmap.",[3]],
+ ["We plan to automate the calibration step. On the rig itself, temperatures are logged every second.",[0,3]],
+ ["Every alarm waits for a human to acknowledge it. Losing the network connection doesn't interrupt the test.",[1,2]],
+ ["The network can drop during a test. If that happens the test stops.",[]],
+ ["The temperature display refreshes every second. Recording only happens once a minute.",[]],
+ ["We took automated calibration off our roadmap last month.",[]],
+ ["A human acknowledges high-priority alarms. The others clear by themselves.",[]]]},
+ {"slide":"Workshop","points":["Participants work in groups of four.","The workshop starts at half past nine.","Participants keep the prototype they build.","The organizers plan a follow-up session."],"cases":[
+ ["The group you work in has four people.",[0]],
+ ["We kick off the workshop at nine thirty in the morning.",[1]],
+ ["Whatever prototype you build is yours to take home.",[2]],
+ ["As organizers we intend to run a follow-up session.",[3]],
+ ["We're planning a follow-up session. You get to take home the prototype you make.",[2,3]],
+ ["We start at nine thirty. For the activities we split everyone into teams of four.",[1,0]],
+ ["Four trainers help with the event. Our participants all work alone.",[]],
+ ["Registration starts at nine thirty, and the actual workshop starts at ten.",[]],
+ ["You can take the design home but the prototype stays here.",[]],
+ ["We discussed a follow-up session and decided against it.",[]]]},
+ {"slide":"Power monitoring","points":["The meter stores readings for thirty days.","An operator reviews every voltage alarm.","The dashboard reports energy use by production line.","The team aims to reduce peak demand."],"cases":[
+ ["An operator looks at each voltage alarm.",[1]],
+ ["Our meter keeps the measurements for thirty days before clearing them.",[0]],
+ ["On the dashboard you can see the energy used on each production line separately.",[2]],
+ ["Lowering peak demand is what our team is aiming for.",[3]],
+ ["Peak demand is what we intend to bring down. An operator reviews each voltage alarm.",[3,1]],
+ ["The meter retains readings for thirty days. You can break down energy consumption by line on the dashboard.",[0,2]],
+ ["Consumption is shown for the entire factory. A per-line breakdown has only been requested.",[]],
+ ["An operator handles current alarms. Voltage alarms close automatically without review.",[]],
+ ["Thirty days is how long the trial ran. The meter only stores readings for a week.",[]],
+ ["Management asked if we wanted to lower peak demand. We decided to keep it unchanged.",[]]]}
+]

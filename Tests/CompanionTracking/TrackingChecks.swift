@@ -3,6 +3,7 @@ import Foundation
 
 @MainActor
 private final class TestSpeechInput: CompanionSpeechInput {
+    var continuesFollowingAfterFinal = false
     private(set) var streams: [@MainActor (CompanionSpeechEvent) -> Void] = []
     private(set) var locales: [String] = []
     private(set) var finishCount = 0
@@ -55,13 +56,47 @@ struct TrackingChecks {
     ]
 
     @MainActor
-    static func main() throws {
+    static func main() async throws {
         let arguments = Array(CommandLine.arguments.dropFirst())
+        if arguments.count == 2, arguments[0] == "--english-coverage-helper" {
+            try await packagedCoverage(URL(fileURLWithPath: arguments[1]))
+            return
+        }
         if arguments.count == 3, arguments[0] == "--questions" {
             try replayQuestions(manifest: URL(fileURLWithPath: arguments[1]), audio: URL(fileURLWithPath: arguments[2]))
             return
         }
+        let apple = TestSpeechInput(), whisper = TestSpeechInput()
+        let switching = CompanionTrackingController(speech: apple, whisper: whisper)
+        switching.configure(pages: pages)
+        switching.startFollowing()
+        precondition(apple.streams.count == 1 && whisper.streams.isEmpty)
+        switching.selectFollowEngine(.whisper)
+        precondition(whisper.streams.count == 1)
+        let anchor = switching.position
+        apple.emit(third + " " + fourth)
+        precondition(switching.position == anchor)
+        whisper.emit(first, final: true)
+        precondition(whisper.streams.count == 1, "A pause must not reload Whisper")
+        switching.startQuestion(localeIdentifier: "zh-CN") { _ in }
+        precondition(apple.locales.last == "zh-CN" && switching.phase == .listeningQuestion)
+        let held = switching.position
+        whisper.emit(third + " " + fourth)
+        precondition(switching.position == held)
+        switching.cancelQuestion()
+        precondition(whisper.streams.count == 2)
+        switching.stopFollowing()
+        print("PASS alternate follow engine, stale input, question isolation and resume")
+        pageEndingChecks()
+        followsSegmentedLongEnding()
+        freeSpeakingChecks()
+        liveFollowFeedback()
         wordProgressAndPointingCues()
+        followsShortTransitionsAcrossFinals()
+        followsAfterDroppedEndings()
+        rollingPreviewAndPrompt()
+        appleSegmentsKeepSuccessivePartialResults()
+        continuousWordProgressAfterRecognitionCorrection()
         sentencesRetainActions()
         matcherAdvancesOnlyWithLocalEvidence()
         repairedPartialCanConfirmAnAdjacentPage()
@@ -78,6 +113,257 @@ struct TrackingChecks {
         chineseKeyPointsAndLocalResourceFailureRemainSelectable()
         previewRangeKeepsPosition()
         print("PASS companion tracking, cue isolation and question lifecycle")
+    }
+
+    @MainActor
+    private static func pageEndingChecks() {
+        for engine in [CompanionFollowEngine.apple, .whisper] {
+            let apple = TestSpeechInput(), whisper = TestSpeechInput()
+            apple.continuesFollowingAfterFinal = true
+            let voice = engine == .apple ? apple : whisper
+            let tracker = CompanionTrackingController(speech: apple, whisper: whisper)
+            let intro = "The sign points to the entrance."
+            let last = "The blue marker shows our first stop."
+            let next = "We cross the bridge to the garden."
+            let deck = [CompanionTrackingPage(sentences: [intro, last, "[Pause.]"]),
+                        .init(sentences: [], isAppendix: true),
+                        .init(sentences: [next, fourth]), .init(sentences: []),
+                        .init(sentences: [sixth], isAppendix: true)]
+            tracker.configure(pages: deck)
+            tracker.selectFollowEngine(engine)
+            tracker.startFollowing()
+            voice.emit(intro)
+            require(tracker.displayedPageIndex == 0 && tracker.previousPageAnchor == nil, "Pre-reading the ending turned the slide")
+            let opening = intro + " The blue marker shows"
+            voice.emit(opening)
+            require(tracker.position == location(0, 1) && tracker.displayedPageIndex == 2, "Distinctive ending did not turn the slide early")
+            require(tracker.previousPageAnchor == location(0, 1) && tracker.promptPosition == location(2, 0) &&
+                    tracker.previewPageIndex == 3 && tracker.readWords[location(2, 0)] == nil, "Wrong handoff panes or premature word marks")
+            let current = intro + " " + last
+            voice.emit(current)
+            require(tracker.displayedPageIndex == 2 && tracker.readWords[location(0, 1)]?.count == 7, "Ending words lost during handoff")
+            voice.emit(current + " " + next)
+            require(tracker.position == location(2, 0) && tracker.displayedPageIndex == 2, "Continuous speech lost the opening of the new slide")
+            tracker.returnToPreviousPage()
+            voice.emit(last, final: true)
+            require(tracker.displayedPageIndex == 0, "Review immediately bounced to the next slide")
+            tracker.select(pageIndex: 2, sentenceIndex: 1)
+            require(tracker.displayedPageIndex == 2, "Manual selection counted as speech")
+            voice.emit(fourth, final: true)
+            require(tracker.displayedPageIndex == 3 && tracker.promptPosition?.sentenceIndex == nil, "Empty body page skipped")
+            voice.emit(sixth, final: true)
+            require(tracker.displayedPageIndex == 3, "Entered an appendix from an empty body page")
+            tracker.configure(pages: [.init(sentences: [intro, last]), .init(sentences: [next]),
+                                      .init(sentences: [first, second, third, fourth, fifth, sixth]), .init(sentences: [intro])])
+            tracker.select(pageIndex: 0)
+            voice.emit(intro + " " + last + " " + next, final: true)
+            require(tracker.previousPageAnchor == location(0, 1), "Coalesced speech lost the last spoken line on the old page")
+            tracker.select(pageIndex: 0, sentenceIndex: 1)
+            voice.emit(last, final: true)
+            tracker.select(pageIndex: 2, fromPreview: true)
+            require(tracker.displayedPageIndex == 2 && tracker.previewPageIndex == 3, "Clicking the right page during a handoff collapsed the rolling preview")
+            tracker.configure(pages: [.init(sentences: ["The blue marker shows the pond.", last]),
+                                      .init(sentences: [next])])
+            tracker.select(pageIndex: 0, sentenceIndex: 1)
+            voice.emit("The blue marker shows")
+            require(tracker.displayedPageIndex == 0, "A shared opening moved the slide")
+            voice.emit(last)
+            require(tracker.displayedPageIndex == 1, "Unique ending failed to disambiguate")
+            tracker.setFreeSpeaking(true)
+            voice.emit(last, final: true)
+            require(tracker.displayedPageIndex == 1 && tracker.position?.pageIndex == 1, "Mode switch restored the old slide")
+            tracker.stopFollowing()
+        }
+        print("PASS early slide handoff: both engines, live tail, rolling preview, manual return, ambiguous prefix, blank and appendix")
+    }
+
+    @MainActor
+    private static func followsSegmentedLongEnding() {
+        let intro = "Forecast models are improving across regions."
+        let chunks = ["When forecast models become mature enough", "and the local weather can be measured precisely",
+                      "we may be able to close this gap"]
+        let ending = chunks.joined(separator: ", ") + "."
+        let deck: [CompanionTrackingPage] = [.init(sentences: [intro, ending]), .init(sentences: [first, second])]
+        for engine in [CompanionFollowEngine.apple, .whisper] {
+            for continuous in [false, true] {
+                let apple = TestSpeechInput(), whisper = TestSpeechInput()
+                apple.continuesFollowingAfterFinal = true
+                let tracker = CompanionTrackingController(speech: apple, whisper: whisper)
+                tracker.configure(pages: deck)
+                tracker.selectFollowEngine(engine)
+                tracker.startFollowing()
+                let voice = engine == .apple ? apple : whisper
+                var previous = ""
+                func say(_ text: String) {
+                    let transcript = previous + text
+                    voice.emit(transcript, final: !continuous)
+                    if continuous { previous = transcript + " " }
+                }
+                say(intro)
+                say(chunks[0])
+                require(tracker.position == location(0, 1) && tracker.displayedPageIndex == 1,
+                        "A pause before a late qualifier blocked the distinctive opening of the ending")
+                require(tracker.readWords[location(0, 1)] == IndexSet(0..<CompanionTrackingMatcher.words(in: chunks[0]).count)
+                        && tracker.readWords[location(1, 0)] == nil,
+                        "Partial ending marked words that were never spoken")
+                say(chunks[1])
+                say(chunks[2])
+                require(tracker.readWords[location(0, 1)]?.count == CompanionTrackingMatcher.words(in: ending).count,
+                        "Later fragments failed to finish the ending on the old page")
+                say(first)
+                require(tracker.position == location(1, 0), "Could not pick up the next page after a segmented ending")
+                tracker.stopFollowing()
+            }
+        }
+        var m = CompanionTrackingMatcher(pages: deck)
+        m.process("When forecast models", awaitingResume: false)
+        require(m.position == location(0, 0), "A short shared phrase moved a manually positioned cursor")
+        m.process("When forecast models become mature enough", awaitingResume: true)
+        require(m.position == location(0, 0), "An unfinished quotation released the question lock")
+        m.process("When forecast models become mature enough we cannot proceed", awaitingResume: false)
+        require(m.position == location(0, 0), "A contradictory ending counted as the printed opening")
+        print("PASS paused long ending, continued word feedback and next-page pickup on both input routes")
+    }
+
+    @MainActor
+    private static func freeSpeakingChecks() {
+        for engine in [CompanionFollowEngine.apple, .whisper] {
+            let apple = TestSpeechInput(), whisper = TestSpeechInput()
+            apple.continuesFollowingAfterFinal = true
+            let input = engine == .whisper ? whisper : apple
+            let controller = CompanionTrackingController(speech: apple, whisper: whisper)
+            controller.configure(pages: pages, document: "first deck")
+            controller.selectFollowEngine(engine)
+            controller.setFreeSpeaking(true)
+            controller.startFollowing()
+            let a = CompanionTrackingPosition(pageIndex: 0, sentenceIndex: 0)
+            let b = CompanionTrackingPosition(pageIndex: 0, sentenceIndex: 2)
+            let next = CompanionTrackingPosition(pageIndex: 2, sentenceIndex: 1)
+            input.emit(second)
+            input.emit(second.dropLast() + "?", final: true)
+            precondition(controller.coverage.covered.isEmpty)
+            input.emit(second, final: true)
+            precondition(controller.coverage.covered == [b] && controller.position == b)
+            controller.select(pageIndex: 0, sentenceIndex: 0)
+            precondition(controller.coverage.covered == [b])
+            input.emit(fourth, final: true)
+            precondition(controller.position == a && controller.displayedPageIndex == 0 && controller.coverage.covered == [b, next])
+            controller.select(pageIndex: 0, sentenceIndex: 0)
+            controller.holdForTypedAnswer()
+            input.emit(first, final: true)
+            precondition(controller.coverage.covered == [b, next])
+            controller.select(pageIndex: 0, sentenceIndex: 0)
+            input.emit(first, final: true)
+            precondition(controller.coverage.covered == [a, b, next] && controller.displayedPageIndex == 0)
+            input.emit(third, final: true)
+            input.emit(fourth, final: true)
+            precondition(controller.position == a && controller.displayedPageIndex == 0)
+            controller.holdForTypedAnswer()
+            input.emit(third + " " + fourth, final: true)
+            precondition(controller.phase == .awaitingResume && controller.displayedPageIndex == 0)
+            controller.select(pageIndex: 2, sentenceIndex: 1, fromPreview: true)
+            precondition(controller.position == next && controller.displayedPageIndex == 2)
+            controller.configure(pages: pages, document: "second deck")
+            precondition(controller.coverage.covered.isEmpty)
+            controller.setFreeSpeaking(false)
+            controller.stopFollowing()
+        }
+        print("PASS free speaking on both input routes: partials, skipped points, clicks, manual-only paging, Q&A and deck reset")
+    }
+
+    @MainActor
+    private static func liveFollowFeedback() {
+        let lines = ["We use three questions.", "Can AI do the digital work?",
+                     "Does the task need physical evidence?", "Who approves the change?",
+                     "The supplier approves the change."]
+        for engine in [CompanionFollowEngine.apple, .whisper] {
+            let apple = TestSpeechInput(), whisper = TestSpeechInput()
+            apple.continuesFollowingAfterFinal = true
+            let input = engine == .whisper ? whisper : apple
+            let controller = CompanionTrackingController(speech: apple, whisper: whisper)
+            controller.configure(pages: [CompanionTrackingPage(sentences: lines)])
+            controller.selectFollowEngine(engine)
+            controller.setFreeSpeaking(true)
+            controller.startFollowing()
+            input.level(0.08, at: 1)
+            input.emit("Does the task need physical")
+            let target = CompanionTrackingPosition(pageIndex: 0, sentenceIndex: 2)
+            precondition(controller.inputLevel > 0 && controller.lastHeard == "Does the task need physical")
+            precondition(controller.coverage.liveWord?.position == target && controller.coverage.covered.isEmpty)
+            input.emit(lines[2], final: true)
+            precondition(controller.position == target && controller.coverage.covered == [target])
+            input.emit(lines[0] + " " + lines[1], final: true)
+            precondition(controller.coverage.covered.count == 3)
+            input.emit("The supplier approves the change?", final: true)
+            precondition(controller.coverage.covered.count == 3)
+            input.emit(lines[2], final: true)
+            precondition(controller.position == target)
+            controller.stopFollowing()
+            precondition(controller.lastHeard.isEmpty && controller.inputLevel == 0 && !controller.displaysFollowCapture)
+        }
+        print("PASS Apple and Whisper routes: live level, interim cursor without grey, authored questions, combined final, repeated reading and stop")
+    }
+
+    @MainActor
+    private static func packagedCoverage(_ helper: URL) async throws {
+        let input = TestSpeechInput()
+        input.continuesFollowingAfterFinal = true
+        let coverage = EnglishPointCoverage(helper: helper)
+        let controller = CompanionTrackingController(speech: input, pointCoverage: coverage)
+        let air = ["The station measures humidity every minute.", "A technician approves each replacement sensor.",
+                   "Readings are saved during a power cut."]
+        let studio = ["Visitors must reserve a place online.", "A guide accompanies every group.",
+                      "The studio plans to offer evening tours."]
+        controller.configure(pages: [CompanionTrackingPage(sentences: air), CompanionTrackingPage(sentences: studio)],
+                             titles: ["Air station", "Studio visits"], document: "coverage integration")
+        controller.setFreeSpeaking(true)
+        controller.startFollowing()
+        defer { controller.stopFollowing(); controller.setFreeSpeaking(false) }
+        func waitFor(_ description: String, _ predicate: () -> Bool) async throws {
+            let end = ContinuousClock.now.advanced(by: .seconds(35))
+            while !predicate(), .now < end {
+                try await Task.sleep(for: .milliseconds(40))
+            }
+            precondition(predicate(), "\(description): \(coverage.status)")
+        }
+        try await waitFor("local model ready") { coverage.state == .ready }
+        let a = CompanionTrackingPosition(pageIndex: 0, sentenceIndex: 0)
+        let c = CompanionTrackingPosition(pageIndex: 0, sentenceIndex: 2)
+        let book = CompanionTrackingPosition(pageIndex: 1, sentenceIndex: 0)
+        let guide = CompanionTrackingPosition(pageIndex: 1, sentenceIndex: 1)
+        input.emit("Every sixty seconds the station takes a humidity measurement.", final: true)
+        controller.holdForTypedAnswer()
+        controller.select(pageIndex: 0, sentenceIndex: 0)
+        input.emit("Even if the power goes out, we keep the readings.", final: true)
+        try await waitFor("late result discarded and shuffled point matched") { coverage.covered.contains(c) }
+        precondition(coverage.covered == [c])
+        input.emit("The station measures humidity once per minute.", final: true)
+        try await waitFor("return to an earlier point") { coverage.covered.contains(a) }
+        input.emit("Nobody can join a visit without booking a spot on the website first.", final: true)
+        try await waitFor("single mention in the preview") { coverage.covered.contains(book) }
+        precondition(controller.position?.pageIndex == 0)
+        input.emit("Every group goes around with a guide.", final: true)
+        try await waitFor("second preview point received") { coverage.covered.contains(guide) }
+        precondition(controller.position == a && controller.displayedPageIndex == 0)
+        precondition(coverage.covered == [a, c, book, guide])
+        controller.select(pageIndex: 0, sentenceIndex: 1)
+        precondition(coverage.covered == [a, c, book, guide])
+        coverage.reset()
+        precondition(coverage.covered.isEmpty)
+        // A full 18-line page can have a semantic job in flight when the next
+        // utterance is verbatim. Late results may fill omissions, never rewind.
+        let dense = air + ["Does the sensor need calibration?"] + (1...14).map { "Checklist item \($0) covers fixture \($0)." }
+        controller.configure(pages: [CompanionTrackingPage(sentences: dense), CompanionTrackingPage(sentences: studio)],
+                             titles: ["Air station", "Studio visits"], document: "dense rehearsal")
+        controller.select(pageIndex: 0)
+        input.emit("Even if the power goes out, we keep the readings.", final: true)
+        let question = CompanionTrackingPosition(pageIndex: 0, sentenceIndex: 3)
+        input.emit("Does the sensor need calibration?", final: true)
+        precondition(coverage.covered == [question] && controller.position == question)
+        try await waitFor("earlier paraphrase completes without rewinding a newer reading") { coverage.covered.contains(c) }
+        precondition(controller.position == question && coverage.covered == [question, c])
+        print("PASS signed local model: late semantic result preserves new cursor on 18-line slide; scripted question marks immediately")
+        print("PASS signed local model over real IPC: paraphrases out of order, omitted point, stale Q&A result, two-page evidence, review and reset")
     }
 
     @MainActor
@@ -276,6 +562,209 @@ struct TrackingChecks {
         var repeated = CompanionTrackingMatcher(pages: [.init(sentences: ["Try again again tomorrow."])])
         for partial in ["Try", "Try again", "Try again.", "Try again again"] { repeated.process(partial, awaitingResume: false) }
         require(repeated.readWords[line] == IndexSet([0,1,2]), "Repeated words or revised punctuation advanced incorrectly")
+    }
+
+    @MainActor
+    private static func followsShortTransitionsAcrossFinals() {
+        for engine in [CompanionFollowEngine.apple, .whisper] {
+            let apple = TestSpeechInput(), whisper = TestSpeechInput()
+            let tracker = CompanionTrackingController(speech: apple, whisper: whisper)
+            tracker.configure(pages: [.init(sentences: [first, "Thank you."]),
+                                      .init(sentences: ["Welcome back.", second]),
+                                      .init(sentences: [third])])
+            tracker.selectFollowEngine(engine)
+            tracker.startFollowing()
+            let input = engine == .apple ? apple : whisper
+            input.emit(first, final: true)
+            input.emit("Thank you.", final: true)
+            require(tracker.position == location(0, 1), "A spoken two-word sentence stuck at the prior line")
+            input.emit("Welcome back.", final: true)
+            require(tracker.position == location(1, 0), "A pause at the page turn lost the new opening")
+            input.emit(second, final: true)
+            input.emit(third, final: true)
+            require(tracker.position == location(2, 0), "The following page did not become current")
+            tracker.stopFollowing()
+        }
+    }
+
+    @MainActor
+    private static func followsAfterDroppedEndings() {
+        let clipped = "Our field team measures"
+        let script = [first, "Shared context.", second, third, fourth, fifth, sixth]
+        for engine in [CompanionFollowEngine.apple, .whisper] {
+            for segmented in [true, false] {
+                let apple = TestSpeechInput(), whisper = TestSpeechInput()
+                let tracker = CompanionTrackingController(speech: apple, whisper: whisper)
+                tracker.configure(pages: [.init(sentences: script), .init(sentences: [third, fourth, second]),
+                                          .init(sentences: [first])])
+                tracker.selectFollowEngine(engine)
+                tracker.startFollowing()
+                let voice = engine == .apple ? apple : whisper
+                voice.emit(clipped, final: segmented)
+                let prefix = segmented ? "" : clipped + " "
+                voice.emit(prefix + "Shared")
+                require(tracker.position == location(0, 0), "A single word after a clipped ending advanced")
+                voice.emit(prefix + "Shared context.", final: segmented)
+                require(tracker.position == location(0, 1), "Missing last words blocked a short following sentence")
+                require(tracker.readWords[location(0, 0)] == IndexSet(0..<4), "Unheard ending was marked")
+                tracker.select(pageIndex: 0, sentenceIndex: 0)
+                voice.emit(clipped, final: segmented)
+                voice.emit(prefix + fourth, final: segmented)
+                require(tracker.position == location(0, 0), "A single distant quotation moved the prompt")
+                voice.emit((segmented ? "" : prefix + fourth + " ") + fifth, final: segmented)
+                require(tracker.position == location(0, 5), "Two ordered later lines could not recover the cursor")
+                require(tracker.readingWindow(upcoming: 1).contains(location(0, 5)), "The last spoken sentence disappeared")
+                voice.emit((segmented ? "" : prefix + fourth + " " + fifth + " ") + sixth)
+                require(tracker.position == location(0, 6), "Tracking stopped after reacquiring the script")
+                tracker.select(pageIndex: 1, sentenceIndex: 1, fromPreview: true)
+                require(tracker.position == location(1, 1) && tracker.twoPagePreviewIndex == 2,
+                        "Selecting a preview sentence did not roll the two pages")
+                voice.emit(fourth)
+                require(tracker.promptPosition == location(1, 2), "Tracking did not continue from the clicked preview sentence")
+                tracker.stopFollowing()
+            }
+        }
+        var m = CompanionTrackingMatcher(pages: [.init(sentences: [first]), .init(sentences: ["Shared context unites teams.", third])])
+        m.process(clipped, awaitingResume: false)
+        m.beginSpeechSegment()
+        m.process("Shared context unites", awaitingResume: false)
+        require(m.position == location(1, 0), "A clipped ending prevented a confirmed page opening")
+        require(m.previousReadPosition == location(0, 0), "Page turn discarded the previous slide's read sentence")
+        m = CompanionTrackingMatcher(pages: [.init(sentences: script)])
+        for fragment in [clipped, fourth, "The", fifth] {
+            m.process(fragment, awaitingResume: false)
+        }
+        require(m.position == location(0, 5) && m.readWords[location(0, 4)]?.count ?? 0 >= 4,
+                "Untimed segment replacement discarded corroborating lines or their read history")
+        require(m.readWords[location(0, 3)] == nil, "A skipped sentence was marked as read")
+        for interrupted in [true, false] {
+            m.select(pageIndex: 0, sentenceIndex: 0)
+            m.process(fourth, awaitingResume: false)
+            m.beginSpeechSegment()
+            if interrupted {
+                m.process("Let me look at the questions.", awaitingResume: false)
+                m.beginSpeechSegment()
+            } else {
+                m.select(pageIndex: 0, sentenceIndex: 0)
+            }
+            m.process(fifth, awaitingResume: false)
+            require(m.position == location(0, 0), "An old quotation survived an interruption or manual jump")
+        }
+        m.select(pageIndex: 0, sentenceIndex: 0)
+        m.process("Do not " + fourth + " " + fifth, awaitingResume: false)
+        require(m.position == location(0, 0), "An opposite assertion anchored a distant pair")
+        for segmented in [false, true] {
+            m = CompanionTrackingMatcher(pages: [.init(sentences: [first, second, third]),
+                                                  .init(sentences: [fourth, fifth, sixth])])
+            m.process(clipped, awaitingResume: false)
+            if segmented { m.beginSpeechSegment() }
+            m.process(fourth, awaitingResume: false)
+            require(m.position == location(0, 0), "A lone quote flipped a slide with unread lines")
+            if segmented { m.beginSpeechSegment() }
+            m.process(segmented ? fifth : fourth + " " + fifth, awaitingResume: false)
+            require(m.position == location(1, 1), "Missed lines at a slide boundary prevented reacquisition")
+        }
+        print("PASS clipped endings, short transitions, distant reacquisition, prompt history and preview selection on both engines")
+    }
+
+    @MainActor
+    private static func rollingPreviewAndPrompt() {
+        let apple = TestSpeechInput(), tracker = CompanionTrackingController(speech: apple)
+        tracker.configure(pages: [
+            .init(sentences: [first, second, "[pause]", third, fourth, "Thank you."]),
+            .init(sentences: ["Backup figures."], isAppendix: true),
+            .init(sentences: ["Welcome back.", first, second, third, fourth]),
+            .init(sentences: [fifth]),
+            .init(sentences: [])
+        ])
+        tracker.startFollowing()
+        require(tracker.previewPageIndex == nil, "Long slides should open at full width")
+        apple.emit(first)
+        require(tracker.promptPosition == location(0, 1) && tracker.position == location(0, 0),
+                "Finishing a line must immediately reveal the next prompt")
+        require(tracker.previewPageIndex == nil, "Preview opened four sentences before the end")
+        apple.emit(first + " " + second)
+        require(tracker.promptPosition == location(0, 3) && tracker.previewPageIndex == 2,
+                "Preview must open at three spoken sentences, skipping directions and appendix slides")
+        let nearEnd = [first, second, third, fourth, "Thank you."].joined(separator: " ")
+        apple.emit(nearEnd, final: true)
+        require(tracker.position == location(0, 5) && tracker.displayedPageIndex == 2 && tracker.promptPosition == location(2, 0),
+                "The last spoken line should bring up the next slide without consuming its first line")
+        apple.emit("Welcome back.")
+        require(tracker.position?.pageIndex == 2 && tracker.previewPageIndex == 3,
+                "The new left page must bring the following page to the right immediately")
+        require(tracker.sentences(on: 3) == [fifth], "Preview must use the following page's own notes")
+        tracker.select(pageIndex: 2)
+        require(tracker.previewPageIndex == nil, "Manual selection retained a stale rolling pair")
+        tracker.select(pageIndex: 0, sentenceIndex: 5)
+        tracker.select(pageIndex: 2, fromPreview: true)
+        require(tracker.previewPageIndex == 3, "Choosing the right page should also promote the next preview")
+        tracker.select(pageIndex: 3)
+        require(tracker.previewPageIndex == 4 && tracker.sentences(on: 4).isEmpty, "Blank slide cannot be previewed")
+        tracker.select(pageIndex: 4)
+        require(tracker.previewPageIndex == nil, "Last page showed a phantom preview")
+        tracker.select(pageIndex: 0)
+        tracker.startQuestion { _ in }
+        apple.emit(nearEnd)
+        require(tracker.promptPosition == location(0, 0) && tracker.previewPageIndex == nil,
+                "Hearing a question must not move the reading view")
+        tracker.cancelQuestion()
+        tracker.stopFollowing()
+        print("PASS completed sentence, three-sentence preview, rolling pages, manual selection and Q&A hold")
+    }
+
+    private static func appleSegmentsKeepSuccessivePartialResults() {
+        var segments = CompanionRecognitionSegments()
+        var matcher = CompanionTrackingMatcher(pages: [.init(sentences: [first, "Thank you."]),
+                                                        .init(sentences: ["Welcome back."])])
+        func hear(_ text: String, _ range: Range<TimeInterval>) {
+            matcher.process(segments.update(text, audio: range), awaitingResume: false)
+        }
+        hear("Our fleet", 0..<0.5)
+        hear(first, 0..<2)
+        hear("Thank", 3..<3.4)
+        hear("Thank you.", 3..<3.8)
+        require(matcher.position == location(0, 1), "A newer Apple partial segment stuck behind old word offsets")
+        hear("Welcome back.", 5..<6)
+        require(matcher.position == location(1, 0), "Apple segment replacement lost the page transition")
+        matcher.select(pageIndex: 0, sentenceIndex: nil)
+        for partial in [first, "Thank", "Thank you.", "", "Welcome back."] {
+            matcher.process(partial, awaitingResume: false)
+        }
+        require(matcher.position == location(1, 0), "Untimed partials replaced after a pause broke the reading sequence")
+    }
+
+    @MainActor
+    private static func continuousWordProgressAfterRecognitionCorrection() {
+        let input = TestSpeechInput()
+        input.continuesFollowingAfterFinal = true
+        let tracker = CompanionTrackingController(speech: input)
+        tracker.configure(pages: [.init(sentences: ["The route isn't fully clear.",
+            "Morgan's answer was simple: walk along the coast.", "Our survey starts tomorrow.", fourth]),
+            .init(sentences: [fifth])])
+        tracker.startFollowing()
+        require(tracker.twoPagePreviewIndex == 1 && tracker.previewPageIndex == nil,
+                "An explicit two-page choice hid the next slide on a long page")
+        input.emit("The route is not fully clear.")
+        require(tracker.promptPosition == location(0, 1), "Second prompt was never displayed")
+        for partial in ["More", "More answer", "More answer was"] { input.emit(partial) }
+        require(tracker.position == location(0, 1) && tracker.readWords[location(0, 1)]?.last == 3,
+                "The second line lost the live cursor when an untimed partial replaced a non-verbatim first line")
+        input.emit("More answer was simple walk along the coast.", final: true)
+        require(tracker.promptPosition == location(0, 2) && input.streams.count == 1 && tracker.isListening,
+                "A sentence final interrupted a continuously running microphone")
+        input.emit("Our survey")
+        require(tracker.readWords[location(0, 2)]?.last == 1, "Third sentence lost its opening words")
+        tracker.select(pageIndex: 1)
+        require(tracker.twoPagePreviewIndex == nil, "The last slide acquired a nonexistent preview")
+        tracker.stopFollowing()
+        var revised = CompanionTrackingMatcher(pages: [.init(sentences: ["At the station check the lamps and turn them on."])])
+        revised.process("Stage2 at the station check the lamps and turn", awaitingResume: false)
+        revised.process("Stage two at the station check the lamps and turn them on", awaitingResume: false)
+        require(revised.readWords[location(0, 0)]?.last == 9, "Re-tokenizing earlier audio froze the last two words")
+        let cues = ["[point to the headline]", "First sentence.", "Second sentence.", "[pause]", "After the pause."]
+        require(CompanionPointingCue.active(in: cues, sentence: 2, read: [])?.instruction == "point to the headline"
+                && CompanionPointingCue.active(in: cues, sentence: 4, read: []) == nil, "A visible pointing cue expired early or survived a pause direction")
     }
 
     private static func sentencesRetainActions() {

@@ -216,7 +216,7 @@ class SpeechRecognizer {
         // Check microphone permission first
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .denied, .restricted:
-            failListening("Microphone access denied. Open System Settings → Privacy & Security → Microphone to allow Textream.")
+            failListening("Microphone access denied. Open System Settings → Privacy & Security → Microphone to allow Xpresentext.")
             openMicrophoneSettings()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
@@ -227,7 +227,7 @@ class SpeechRecognizer {
                     if granted {
                         self.beginAfterMicrophoneAccess(for: generation)
                     } else {
-                        self.failListening("Microphone access denied. Open System Settings → Privacy & Security → Microphone to allow Textream.")
+                        self.failListening("Microphone access denied. Open System Settings → Privacy & Security → Microphone to allow Xpresentext.")
                     }
                 }
             }
@@ -257,7 +257,7 @@ class SpeechRecognizer {
                 case .authorized:
                     self.beginRecognition()
                 default:
-                    self.failListening("Speech recognition not authorized. Open System Settings → Privacy & Security → Speech Recognition to allow Textream.")
+                    self.failListening("Speech recognition not authorized. Open System Settings → Privacy & Security → Speech Recognition to allow Xpresentext.")
                     self.openSpeechRecognitionSettings()
                 }
             }

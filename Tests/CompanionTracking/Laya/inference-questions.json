@@ -1,0 +1,23 @@
+{
+  "englishEntailment": {
+    "relation": {
+      "type": "choice",
+      "instructions": "Given the premise, is the hypothesis entailed, contradicted, or neither?",
+      "criteria": {
+        "entailment": "The premise implies that the hypothesis is true.",
+        "neutral": "The truth of the hypothesis cannot be determined from the premise.",
+        "contradiction": "The premise implies that the hypothesis is false."
+      }
+    }
+  },
+  "chineseClaims": {
+    "meetings": "共用已批准的需求可以减少协调会议。",
+    "tracing": "需求变更后，团队能确定哪些测试必须重跑。",
+    "approval": "每次发布都必须由人工审核批准。"
+  },
+  "chineseChoice": {
+    "meetings": ["演讲者对统一需求和协调会议作出了哪项陈述？", "共用一份定稿让协调会议次数减少了", "会议次数没减少或减少会议只是设想", "没有交代统一需求减少协调会议"],
+    "tracing": ["演讲者对需求变更和测试的关系作出了哪项陈述？", "修改需求后可以确定哪些测试需要重跑", "修改需求后不知道该重跑哪些测试或仍属设想", "没有交代根据需求变更定位要重跑的测试"],
+    "approval": ["演讲者对每次发布的审批作出了哪项陈述？", "每次发布前都必须由人审核放行", "发布可以自动批准或人工审核只是一种设想", "没有交代人工审批发布的规则"]
+  }
+}

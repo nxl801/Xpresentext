@@ -9,8 +9,30 @@ enum CompanionSpeechEvent: Sendable {
     case failure(String, canRestart: Bool)
 }
 
+/// Within one Apple request a partial may replace the text with a later audio
+/// segment. Keep earlier words only when the two audio ranges do not overlap.
+struct CompanionRecognitionSegments {
+    private var committed = ""
+    private(set) var newlyCommitted: String?
+    private var previousText = ""
+    private var previousRange: Range<TimeInterval>?
+
+    mutating func update(_ text: String, audio: Range<TimeInterval>?) -> String {
+        newlyCommitted = nil
+        if let audio, let previousRange, audio.lowerBound >= previousRange.upperBound,
+           audio.lowerBound - previousRange.lowerBound > 0.12, !previousText.isEmpty {
+            newlyCommitted = previousText
+            committed += previousText + " "
+        }
+        previousRange = audio
+        previousText = text
+        return committed + text
+    }
+}
+
 @MainActor
 protocol CompanionSpeechInput: AnyObject {
+    var continuesFollowingAfterFinal: Bool { get }
     func start(
         localeIdentifier: String,
         reportLevel: Bool,
@@ -18,6 +40,10 @@ protocol CompanionSpeechInput: AnyObject {
     )
     func finish()
     func cancel()
+}
+
+extension CompanionSpeechInput {
+    var continuesFollowingAfterFinal: Bool { false }
 }
 
 @MainActor
@@ -33,12 +59,20 @@ protocol CompanionQuestionPCMInput: CompanionSpeechInput {
 
 @MainActor
 final class CompanionLocalSpeechInput: CompanionQuestionPCMInput {
+    let continuesFollowingAfterFinal = true
+    var separateFollowSegments = false
+    var onStatus: ((String) -> Void)?
+    private var recognitionID = UUID()
     private var generation = UUID()
     private var starting: Task<Void, Never>?
     private var engine: AVAudioEngine?
     private var tap: CompanionAudioTap?
     private var recognizer: SFSpeechRecognizer?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private var followSegments = CompanionRecognitionSegments()
+    private var bufferedFollowRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var heardFollowText = false
+    private var lastFollowVoice: TimeInterval?
 
     func start(
         localeIdentifier: String,
@@ -68,25 +102,33 @@ final class CompanionLocalSpeechInput: CompanionQuestionPCMInput {
             guard let self else { return }
             // An explicitly online question can use the microphone without
             // requesting Apple's separate Speech permission.
-            let speechAuthorized = if onPCM != nil {
-                SFSpeechRecognizer.authorizationStatus() == .authorized
+            let speechAuthorized: Bool
+            if onPCM != nil {
+                speechAuthorized = SFSpeechRecognizer.authorizationStatus() == .authorized
             } else {
-                await Self.speechIsAuthorized()
+                if SFSpeechRecognizer.authorizationStatus() == .notDetermined {
+                    self.onStatus?("等待语音识别授权 · 请在 macOS 提示中点「允许」")
+                }
+                speechAuthorized = await Self.speechIsAuthorized()
             }
             guard self.generation == token else { return }
             guard speechAuthorized || onPCM != nil else {
-                onEvent(.failure("请在 macOS 的「隐私与安全性」中允许 Textream Studio 使用语音识别。仍可点击讲稿定位。", canRestart: false))
+                onEvent(.failure("请在 macOS 的「隐私与安全性」中允许 Xpresentext 使用语音识别。仍可点击讲稿定位。", canRestart: false))
                 return
             }
             let available = speechAuthorized ? recognizer : nil
             onLocalAvailability(available != nil)
             guard self.generation == token else { return }
+            if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+                self.onStatus?("等待麦克风授权 · 请在 macOS 提示中点「允许」")
+            }
             let microphoneAuthorized = await Self.microphoneIsAuthorized()
             guard self.generation == token else { return }
             guard microphoneAuthorized else {
                 onEvent(.failure("请在 macOS 的「隐私与安全性」中允许使用麦克风。仍可输入问题或点击讲稿。", canRestart: false))
                 return
             }
+            self.onStatus?("正在打开麦克风")
             self.begin(recognizer: available, reportLevel: reportLevel, onPCM: onPCM, token: token,
                        onLocalAvailability: onLocalAvailability, onEvent: onEvent)
         }
@@ -113,6 +155,9 @@ final class CompanionLocalSpeechInput: CompanionQuestionPCMInput {
         starting = nil
         stopAudio(flushPCM: false)
         recognitionTask?.cancel()
+        bufferedFollowRequest = nil
+        heardFollowText = false
+        lastFollowVoice = nil
         recognitionTask = nil
         recognizer = nil
     }
@@ -140,9 +185,21 @@ final class CompanionLocalSpeechInput: CompanionQuestionPCMInput {
             onEvent(.failure("麦克风音频无法送到本题的语音服务。仍可输入问题。", canRestart: false))
             return
         }
-        let tap = CompanionAudioTap(reportLevel: reportLevel, pcm: pcm) { [weak self] level, time in
+        let segmentOnPause = !reportLevel && separateFollowSegments
+        let tap = CompanionAudioTap(reportLevel: true, pcm: pcm) { [weak self] level, time in
             Task { @MainActor in
-                guard self?.generation == token else { return }
+                guard let self, self.generation == token else { return }
+                if segmentOnPause {
+                    if level >= 0.012 { self.lastFollowVoice = time }
+                    else if self.heardFollowText, self.bufferedFollowRequest == nil,
+                            let end = self.lastFollowVoice, time - end >= 0.9 {
+                        // Seal the previous utterance, keeping incoming audio in
+                        // the next request while Apple finalizes the previous one.
+                        let next = self.makeRecognitionRequest()
+                        self.bufferedFollowRequest = next
+                        self.tap?.replaceLocalRequest(next)
+                    }
+                }
                 onEvent(.level(level, at: time))
             }
         }
@@ -155,7 +212,7 @@ final class CompanionLocalSpeechInput: CompanionQuestionPCMInput {
         self.recognizer = recognizer
 
         if let recognizer {
-            startRecognition(recognizer, tap: tap, streaming: pcm != nil, token: token,
+            startRecognition(recognizer, tap: tap, streaming: pcm != nil, following: !reportLevel, token: token,
                              onLocalAvailability: onLocalAvailability, onEvent: onEvent)
         }
 
@@ -169,30 +226,70 @@ final class CompanionLocalSpeechInput: CompanionQuestionPCMInput {
         }
     }
 
-    private func startRecognition(
-        _ recognizer: SFSpeechRecognizer,
-        tap: CompanionAudioTap,
-        streaming: Bool,
-        token: UUID,
-        onLocalAvailability: @escaping @MainActor (Bool) -> Void,
-        onEvent: @escaping @MainActor (CompanionSpeechEvent) -> Void
-    ) {
+    private func makeRecognitionRequest() -> SFSpeechAudioBufferRecognitionRequest {
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.requiresOnDeviceRecognition = true
         request.shouldReportPartialResults = true
         request.taskHint = .dictation
-        tap.replaceLocalRequest(request)
+        return request
+    }
+
+    private func startRecognition(
+        _ recognizer: SFSpeechRecognizer,
+        tap: CompanionAudioTap,
+        streaming: Bool,
+        following: Bool,
+        token: UUID,
+        onLocalAvailability: @escaping @MainActor (Bool) -> Void,
+        onEvent: @escaping @MainActor (CompanionSpeechEvent) -> Void
+    ) {
+        let queued = bufferedFollowRequest
+        let request = queued ?? makeRecognitionRequest()
+        bufferedFollowRequest = nil
+        heardFollowText = false
+        lastFollowVoice = nil
+        followSegments = CompanionRecognitionSegments()
+        let id = UUID()
+        recognitionID = id
+        if queued == nil { tap.replaceLocalRequest(request) }
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-            let transcript = result?.bestTranscription.formattedString
+            let transcription = result?.bestTranscription
+            let transcript = transcription?.formattedString
+            let segments = transcription?.segments
+            let audio: Range<TimeInterval>? = if let first = segments?.first, let last = segments?.last,
+                                                  last.duration > 0, last.timestamp + last.duration > first.timestamp {
+                first.timestamp..<(last.timestamp + last.duration)
+            } else { nil }
             let isFinal = result?.isFinal == true
             let problem = error.map { $0 as NSError }
             Task { @MainActor in
-                guard let self, self.generation == token else { return }
-                if let transcript { onEvent(.transcript(transcript, isFinal: isFinal)) }
+                guard let self, self.generation == token, self.recognitionID == id else { return }
+                if let transcript, !transcript.isEmpty {
+                    let text = following ? self.followSegments.update(transcript, audio: audio) : transcript
+                    if following && self.separateFollowSegments {
+                        if !isFinal {
+                            self.heardFollowText = true
+                            if self.lastFollowVoice == nil { self.lastFollowVoice = ProcessInfo.processInfo.systemUptime }
+                        }
+                        if let committed = self.followSegments.newlyCommitted {
+                            onEvent(.transcript(committed, isFinal: true))
+                            guard self.generation == token, self.recognitionID == id else { return }
+                        }
+                        onEvent(.transcript(transcript, isFinal: isFinal))
+                    } else {
+                        onEvent(.transcript(text, isFinal: isFinal))
+                    }
+                } else if isFinal { onEvent(.transcript("", isFinal: true)) }
                 guard self.generation == token else { return }
+                if self.engine != nil, following, let recognizer = self.recognizer,
+                   isFinal || (problem != nil && self.bufferedFollowRequest != nil) {
+                    self.startRecognition(recognizer, tap: tap, streaming: false, following: true, token: token,
+                                          onLocalAvailability: onLocalAvailability, onEvent: onEvent)
+                    return
+                }
                 if streaming && self.engine != nil {
                     if isFinal, let recognizer = self.recognizer {
-                        self.startRecognition(recognizer, tap: tap, streaming: true, token: token,
+                        self.startRecognition(recognizer, tap: tap, streaming: true, following: following, token: token,
                                               onLocalAvailability: onLocalAvailability, onEvent: onEvent)
                     } else if problem != nil {
                         tap.replaceLocalRequest(nil)

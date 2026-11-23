@@ -42,11 +42,34 @@ struct DeckAcceptance {
                    "A unique numbered text object did not resolve")
     }
 
+    private static func checkGroupedCues() throws {
+        func target(_ text: String, x: Double, y: Double, title: Bool = false) -> DeckCueTarget {
+            DeckCueTarget(text: text, region: DeckRegion(x: x, y: y, width: 0.22, height: 0.06), isSlideTitle: title)
+        }
+        let head = target("The mission", x: 0.1, y: 0.2, title: true)
+        let rest = target("starts here", x: 0.1, y: 0.27)
+        let labels = ["Ridge", "Ocean floor", "East coast"].enumerated().map {
+            target($0.element, x: 0.08 + 0.29 * Double($0.offset), y: 0.7)
+        }
+        let shapes = [head, rest] + labels
+        func regions(_ cue: String, _ text: String) -> [DeckRegion] {
+            DeckCueTarget.regions(for: cue, context: "", nearbyText: text, title: head.text, among: shapes)
+        }
+        let box = regions("point to the headline", "The mission starts here.")[0]
+        try expect(box.y == head.region.y && abs(box.y + box.height - 0.33) < 0.00001, "Split headline was cut off")
+        try expect(regions("point to the three words", "Ridge, then ocean floor and east coast.") == labels.map(\.region),
+                   "Grouped labels were not individually framed")
+        try expect(regions("指向三个词", "Ridge, then ocean floor.").isEmpty, "Missing label guessed an unrelated box")
+        try expect(regions("point right", "").first?.x ?? 0 > 0.5, "The explicit right-side direction was lost")
+    }
+
     static func main() async throws {
         let folder = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
         let work = FileManager.default.temporaryDirectory.appendingPathComponent("DeckAcceptance-\(UUID())", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: work) }
         try checkCueTargets()
+        try checkGroupedCues()
+        if CommandLine.arguments[1] == "--cue-targets" { print("PASS slide pointing targets"); return }
         let store = DeckStore(rootURL: work)
         let slideNotes = try await store.importDeck(from: folder.appendingPathComponent("notes.pptx"))
         let notes = slideNotes.activeRevision

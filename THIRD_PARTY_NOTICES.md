@@ -1,21 +1,15 @@
-# Third-party notices and redistribution review
+# Xpresentext licenses and attribution
 
-## Textream
+Xpresentext is distributed under the GNU General Public License, version 3 (GPL-3.0-only). Retain the original notices for incorporated works.
 
-This project is derived from https://github.com/f/textream. Copyright (c) 2026 Fatih Kadir Akin. The MIT license is retained in LICENSE and bundled in the application. Upstream source, app icons and documentation assets were present in the base repository; this is not an independent trademark or asset-rights audit.
+| Component | Source and terms |
+| --- | --- |
+| Textream by Fatih Kadir Akın | [Upstream](https://github.com/f/textream) and [original MIT notice](LICENSES/Textream-MIT.txt). Xpresentext adds a slide workspace, tracking, coverage and presenter Q&A. |
+| Murmury and presenter adapter | [Pinned revision, modifications and build instructions](Textream/Murmury/NOTICE.md) and [GPLv3](Textream/Murmury/upstream/LICENSE). |
+| OpenDyslexic | [SIL Open Font License and attribution](Textream/Textream/Fonts/OpenDyslexic-OFL.txt). |
+| Earth texture and lunar panorama | [Authors and provenance](Textream/Textream/LunarAssets/Credits.txt). |
+| FineCat NLI model and tokenizer | Optional separate download. [Pinned source and Apache-2.0 terms](Textream/Murmury/english_coverage/NOTICE.md). |
+| Whisper Turbo | Optional [MLX conversion](https://huggingface.co/mlx-community/whisper-large-v3-turbo) of [OpenAI weights](https://huggingface.co/openai/whisper-large-v3-turbo). |
+| Python, PySide6/Qt, MLX and other runtime dependencies | [Build inputs](Textream/Murmury/pyproject.toml) and [locked versions](Textream/Murmury/uv.lock). Each dependency retains its own terms. |
 
-## OpenDyslexic
-
-Bundled OpenDyslexic font files retain their SIL Open Font License notices in the adjacent OpenDyslexic-OFL.txt files. The local app build copies that license with the fonts. Reserved font name requirements continue to apply.
-
-## Runtime and build dependencies
-
-Apple system frameworks and Command Line Tools are not redistributed. LibreOffice is not bundled. Python test dependencies (python-pptx, Pillow, lxml) are not included in this source or application archive and must be obtained separately under their own licenses.
-
-## Optional demonstration audio
-
-Demonstration WAV assets are excluded from both the source archive and application because their redistribution rights have not been established. Synthetic text metadata and local test-generation scripts are retained. Local generation is subject to the selected voice/software terms; generated audio should not be redistributed without review. Runtime microphone functionality is unaffected.
-
-## Services
-
-Optional online providers and local CLI integrations are separate services/software. Their names do not imply endorsement. Keys, accounts and third-party service software are not bundled.
+This source distribution excludes demonstration recordings, model weights and prebuilt applications. For binary redistribution, provide the complete corresponding source under GPLv3 section 6 and retain applicable runtime notices and sources.

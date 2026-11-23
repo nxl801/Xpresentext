@@ -48,7 +48,7 @@ enum CompanionEnglishFollowSample {
         }
     }
 
-    private struct Scorer {
+    struct Scorer {
         private var matcher: CompanionTrackingMatcher
         private var awaitingResume: Bool
         private let expected: Int?

@@ -28,6 +28,14 @@ struct DeckRenderer: Sendable {
         guard let officeURL, FileManager.default.isExecutableFile(atPath: officeURL.path) else {
             throw DeckImportError.missingRenderer
         }
+        // The macOS bundle still initializes AppKit in --headless mode. In a
+        // process without a WindowServer session it aborts during registration.
+        let binary = officeURL.resolvingSymlinksInPath()
+        let frameworks = binary.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Frameworks")
+        if FileManager.default.fileExists(atPath: frameworks.appendingPathComponent("libvclplug_osxlo.dylib").path),
+           CGSessionCopyCurrentDictionary() == nil {
+            throw DeckImportError.renderMessage("当前进程无法连接 macOS 图形会话。请在已登录的 Mac 桌面打开 Xpresentext 转换胶片，或导入同版 PDF。")
+        }
         let profile = workDirectory.appendingPathComponent("office-profile", isDirectory: true)
         let userProfile = profile.appendingPathComponent("user", isDirectory: true)
         try FileManager.default.createDirectory(at: userProfile, withIntermediateDirectories: true)

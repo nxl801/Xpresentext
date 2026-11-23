@@ -6,6 +6,7 @@ struct StudioCuePreview: View {
     let project: DeckProject
     let slide: DeckSlide
     let height: CGFloat
+    var compact = false
     @State private var indexRevision = ""
     @State private var oldTargets: [Int: [DeckCueTarget]] = [:]
     @State private var bulletKey = ""
@@ -24,37 +25,37 @@ struct StudioCuePreview: View {
     @State private var editing: EditingCue?
 
     private var cue: CompanionPointingCue? {
-        guard let position = tracking.position, position.pageIndex == slide.pageNumber - 1,
+        guard let position = tracking.promptPosition, position.pageIndex == slide.pageNumber - 1,
               let index = position.sentenceIndex else { return nil }
         return CompanionPointingCue.active(in: tracking.sentences(on: position.pageIndex), sentence: index,
                                            read: tracking.readWords[position] ?? [])
     }
 
     private var textTargets: [DeckCueTarget] {
-        slide.cueTargets ?? (indexRevision == project.activeRevisionID ? oldTargets[slide.pageNumber] : nil) ?? []
+        (indexRevision == project.activeRevisionID ? oldTargets[slide.pageNumber] : nil) ?? slide.cueTargets ?? []
     }
 
     private var pageKey: String {
         "\(project.activeRevisionID)/\(slide.pageNumber)/\(slide.image?.fingerprint ?? "")/\(textTargets.count)"
     }
 
-    private func region(for cue: CompanionPointingCue) -> DeckRegion? {
-        if let manual = slide.manualCueRegions?[cue.id] { return manual }
+    private func regions(for cue: CompanionPointingCue) -> [DeckRegion] {
+        if let manual = slide.manualCueRegions?[cue.id] { return [manual] }
         let targets = textTargets + (bulletKey == pageKey ? bulletTargets : [])
-        return DeckCueTarget.resolve(cue.instruction, context: cue.context, among: targets)
+        return DeckCueTarget.regions(for: cue.instruction, context: cue.context, nearbyText: cue.nearbyText, title: slide.title, among: targets)
     }
 
-    private func image(region: DeckRegion?) -> StudioPageImage {
+    private func image(regions: [DeckRegion]) -> StudioPageImage {
         StudioPageImage(store: ws.store, projectID: project.id, revisionID: project.activeRevisionID,
                         pageNumber: slide.pageNumber,
-                        region: region.map { QARegion(x: $0.x, y: $0.y, width: $0.width, height: $0.height) },
+                        highlightRegions: regions.map { QARegion(x: $0.x, y: $0.y, width: $0.width, height: $0.height) },
                         imageSetID: project.activeRevision.imageSetID, outline: StudioColors.color(project.cueColorHex),
                         outlinePadding: 2.5)
     }
 
     var body: some View {
         let active = cue
-        let target = active.flatMap(region)
+        let targets = active.map(regions) ?? []
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("\(slide.pageNumber) / \(project.activeRevision.slides.count)")
@@ -62,22 +63,26 @@ struct StudioCuePreview: View {
                 Text(slide.title.isEmpty ? "胶片" : slide.title).font(.headline).lineLimit(1)
                 Spacer()
                 if let active, slide.image != nil {
-                    Button(target == nil ? "框选指向" : "校准指向") {
+                    Button {
                         editing = EditingCue(cue: active, projectID: project.id, revisionID: project.activeRevisionID,
                                              page: slide.pageNumber, imageSetID: project.activeRevision.imageSetID,
-                                             color: StudioColors.color(project.cueColorHex), initialRegion: target)
+                                             color: StudioColors.color(project.cueColorHex), initialRegion: targets.count == 1 ? targets.first : nil)
+                    } label: {
+                        Label(targets.isEmpty ? "框选指向" : "校准指向", systemImage: "scope")
+                            .foregroundStyle(StudioColors.color(project.cueColorHex))
                     }
                     .disabled(tracking.phase == .listeningQuestion)
                     .help(active.instruction)
                 }
                 if slide.isAppendix { Label("备查附录", systemImage: "bookmark").font(.callout).foregroundStyle(.secondary) }
-            }.padding(.horizontal, 20).padding(.vertical, 10)
-            image(region: target)
+            }.padding(.horizontal, 14).padding(.vertical, 7)
+                .modifier(StudioGlass(radius: 10))
+            image(regions: targets)
                 .frame(maxWidth: .infinity).frame(height: height)
-                .padding(.vertical, 4).background(Color(nsColor: .underPageBackgroundColor).opacity(0.42))
+                .padding(.trailing, compact ? 0 : 80).padding(.vertical, 5)
         }
         .task(id: project.activeRevisionID) {
-            guard project.activeRevision.slides.contains(where: { $0.cueTargets == nil }) else { return }
+            guard project.activeRevision.slides.contains(where: { !$0.hasIndexedCueTargets }) else { return }
             let revision = project.activeRevision
             let targets = try? await ws.store.cueTargets(projectID: project.id, revision: revision)
             guard !Task.isCancelled else { return }

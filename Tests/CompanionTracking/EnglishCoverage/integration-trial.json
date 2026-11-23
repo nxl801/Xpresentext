@@ -1,0 +1,23 @@
+[
+ {"slide":"Air station","points":["The station measures humidity every minute.","A technician approves each replacement sensor.","Readings are saved during a power cut."],"cases":[
+ ["Even if the power goes out, we keep the readings.",[2]],
+ ["Every sixty seconds the station takes a humidity measurement.",[0]],
+ ["Before any replacement sensor can be used, a technician has to approve it.",[1]],
+ ["We keep the readings if the power fails. The station measures humidity once a minute.",[0,2]],
+ ["A technician orders the new sensors. Approval is left to the purchasing manager.",[]],
+ ["The humidity display refreshes each minute, but we measure humidity only every hour.",[]]]},
+ {"slide":"Studio visits","points":["Visitors must reserve a place online.","A guide accompanies every group.","The studio plans to offer evening tours."],"cases":[
+ ["We're planning to show people around the studio in the evenings.",[2]],
+ ["Nobody can join a visit without booking a spot on the website first.",[0]],
+ ["Every group goes around with a guide.",[1]],
+ ["All groups have a guide with them. Each visitor needs to reserve a place on the web.",[1,0]],
+ ["Evening tours were suggested, but we dropped that plan.",[]],
+ ["You can book online if you want. You can also just turn up.",[]]]},
+ {"slide":"Cooling trial","points":["The trial compared two cooling systems.","Each unit ran continuously for six hours.","The engineers measured noise at the outlet."],"cases":[
+ ["At the outlet the engineers checked how much noise the units made.",[2]],
+ ["We put two different cooling systems head to head in this trial.",[0]],
+ ["Each unit kept running without a break for six hours.",[1]],
+ ["The engineers took noise readings at the outlet. Every unit ran non-stop for six hours.",[2,1]],
+ ["The units ran for three hours and then stopped for three. The full visit took six hours.",[]],
+ ["We considered a second cooling system, but only one actually took part.",[]]]}
+]

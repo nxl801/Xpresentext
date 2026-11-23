@@ -1,0 +1,43 @@
+{
+  "claims": {
+    "meetings": "Using the same approved requirements reduces coordination meetings.",
+    "tracing": "When requirements change, the team can identify the tests that must be rerun.",
+    "approval": "A human reviewer must approve each release."
+  },
+  "scoreInstructionPrefix": "How fully does the speaker affirm this claim: ",
+  "scoreCriteria": [
+    "Absent, contradicted, hypothetical, or only asked about",
+    "Related topic or partial statement without the full claim",
+    "The speaker affirms the entire claim, in their own words",
+    "The speaker affirms and illustrates the entire claim"
+  ],
+  "choice": {
+    "meetings": {
+      "type": "choice",
+      "instructions": "What does the presenter report about shared requirements and meetings?",
+      "criteria": {
+        "A": "Adopting a common approved specification has cut the number of coordination meetings.",
+        "B": "Meetings continue at the same rate or increase, or fewer meetings are only proposed.",
+        "C": "No reduction in meetings attributed to shared requirements is reported; the speaker discusses something else or just mentions a common specification."
+      }
+    },
+    "tracing": {
+      "type": "choice",
+      "instructions": "What does the presenter report about the effect of a requirements change on testing?",
+      "criteria": {
+        "A": "When a requirement changes the team knows exactly which tests need repeating.",
+        "B": "The team cannot tell which tests to repeat, or the capability is only proposed.",
+        "C": "No claim about identifying affected tests after requirement changes is made; a different matter is discussed."
+      }
+    },
+    "approval": {
+      "type": "choice",
+      "instructions": "What does the presenter report about the release approval rule?",
+      "criteria": {
+        "A": "Every release must be signed off by a human before it ships.",
+        "B": "Release approval is automatic, optional, or only proposed as a future policy.",
+        "C": "Human approval of a release is not discussed; the speaker discusses a different matter."
+      }
+    }
+  }
+}
