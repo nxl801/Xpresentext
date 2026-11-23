@@ -1,0 +1,19 @@
+name: Publish verified v0.6.4 draft
+on:
+  push:
+    branches: [release/publish-v0.6.4]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify uploaded assets and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          draft=$(gh api repos/nxl801/Xpresentext/releases | jq -er '[.[] | select(.draft and (.name | startswith("Xpresentext v0.6.4")))] | select(length==1) | .[0].id')
+          api="repos/nxl801/Xpresentext/releases/$draft"
+          gh api "$api/assets" | jq -e 'length==2 and any(.[]; .digest=="sha256:2238a6cb7f7f0146bf3d9bd85c2893b65a92a9a970c3fc11216857c42daa285d") and any(.[]; .digest=="sha256:183909942a591eea80da5de181bc4eebe02f5326355dd9fc48b12a6754a83904")'
+          gh api -X PATCH "$api" -f tag_name=v0.6.4 -f target_commitish=a5e6be7edae0911421197c8a6a56fb102c6e6554 -F draft=false -F prerelease=false -f make_latest=true --jq .html_url
