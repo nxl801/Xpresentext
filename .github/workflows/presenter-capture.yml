@@ -1,0 +1,39 @@
+name: Capture presenter workspace
+on:
+  push:
+    branches: [docs/capture-presenter-window]
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - name: Open the published app with a sample talk
+        run: |
+          curl -fsSL https://github.com/nxl801/Xpresentext/releases/download/v0.6.4/Xpresentext-0.6.4-macOS-arm64-AppleSpeech.zip -o app.zip
+          ditto -x -k app.zip .
+          python3 -m venv demo-env
+          demo-env/bin/pip install -q python-pptx
+          demo-env/bin/python - <<'PY'
+          from pptx import Presentation
+          d = Presentation()
+          for title, body, notes in [
+            ("A quieter morning commute", "A three-week pilot", "Think about the last time you missed a connection. Today I will show you what changed when we moved one departure."),
+            ("Five minutes made the difference", "Earlier departures at two stops", "We moved the first bus five minutes earlier. Riders had more time to make the next train. The timetable stayed the same for the rest of the day."),
+            ("Where we go next", "Repeat the pilot on the north route", "Next month we will repeat the pilot on the north route. We will ask riders which connections still need work.")]:
+              slide=d.slides.add_slide(d.slide_layouts[1])
+              slide.shapes.title.text=title
+              slide.placeholders[1].text=body
+              slide.notes_slide.notes_text_frame.text=notes
+          d.save("Morning commute.pptx")
+          PY
+          defaults write com.apple.universalaccess reduceTransparency -bool false
+          open -a "$PWD/Xpresentext.app" "$PWD/Morning commute.pptx"
+          sleep 15
+          screencapture -x presenter.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: presenter-window
+          path: presenter.png
+          retention-days: 1
