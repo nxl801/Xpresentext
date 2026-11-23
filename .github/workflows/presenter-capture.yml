@@ -9,10 +9,15 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
       - name: Open the published app with a sample talk
         run: |
           curl -fsSL https://github.com/nxl801/Xpresentext/releases/download/v0.6.4/Xpresentext-0.6.4-macOS-arm64-AppleSpeech.zip -o app.zip
           ditto -x -k app.zip .
+          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)/Contents/Developer
+          xcrun --show-sdk-version
+          find Textream/Textream -name '*.swift' -print0 | xargs -0 xcrun swiftc -parse-as-library -swift-version 5 -enable-bare-slash-regex -whole-module-optimization -target arm64-apple-macosx15.0 -D LOCAL_COMPANION -module-name Textream -o Xpresentext.app/Contents/MacOS/Xpresentext
+          codesign --force --sign - Xpresentext.app
           python3 -m venv demo-env
           demo-env/bin/pip install -q python-pptx
           demo-env/bin/python - <<'PY'
@@ -31,7 +36,17 @@ jobs:
           defaults write com.apple.universalaccess reduceTransparency -bool false
           open -a "$PWD/Xpresentext.app" "$PWD/Morning commute.pptx"
           sleep 15
-          screencapture -x presenter.png
+          cat > /tmp/window.swift <<'SWIFT'
+          import CoreGraphics
+          let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly,.excludeDesktopElements], kCGNullWindowID) as? [[String:Any]] ?? []
+          for w in windows where (w[kCGWindowOwnerName as String] as? String)?.lowercased() == "xpresentext" && w[kCGWindowLayer as String] as? Int == 0 {
+              if let bounds = w[kCGWindowBounds as String] as? [String:Any], let width = bounds["Width"] as? Double, width > 600 {
+                  print(w[kCGWindowNumber as String]!); break
+              }
+          }
+          SWIFT
+          wid=$(swift /tmp/window.swift)
+          if [ -n "$wid" ]; then screencapture -x -o -l "$wid" presenter.png; else screencapture -x presenter.png; fi
       - uses: actions/upload-artifact@v4
         with:
           name: presenter-window
